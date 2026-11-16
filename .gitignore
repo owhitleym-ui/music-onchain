@@ -147,3 +147,17 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Next.js / Vercel
+.next/
+.vercel/
+
+# Foundry (contracts)
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# Secrets
+.env.*
+!.env.example
