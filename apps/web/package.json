@@ -6,12 +6,22 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "abi": "node scripts/export-abis.mjs",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"tests/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@privy-io/node": "0.37.0",
+    "@privy-io/react-auth": "3.51.0",
+    "@solana/kit": "8.6.0",
+    "@stripe/stripe-js": "1.54.2",
+    "@supabase/supabase-js": "2.118.0",
     "next": "16.4.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "0.0.1",
+    "viem": "2.57.14"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",

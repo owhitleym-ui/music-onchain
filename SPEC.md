@@ -68,7 +68,33 @@ function isBlocked(uint256 songId, address wallet) external view returns (bool);
 7. **Settle:** the admin submits the real view count, and the contract pays out in the same transaction.
 8. **Results:** final ranks, payouts, and the artist's earnings are shown.
 
+## Backend API
+
+Status: **implemented by Sean on `sean/backend`, pending team review.** Runbook: `docs/BACKEND.md`.
+
+Every amount comes back as `{ "usd": "5.00", "raw": "5000000" }` (raw = 6-decimal USDC). Show `usd`. Players are named `"Fan 3F9A"` or `"You"`, never by address. Errors are `{ "ok": false, "error": "<code>", "message": "<readable>" }`.
+
+| Route | Who calls it | Request | Response |
+|---|---|---|---|
+| `GET /api/competitions` | Home page | none | `{ ok, competitions: Summary[] }` |
+| `GET /api/competitions/:id/leaderboard?viewer=0x…` | Competition page, poll every 2–3 s | `viewer` = signed-in wallet (marks "You") | `{ ok, source: "stream" \| "chain", competition: Summary, entries: Entry[], artistEarned? }` |
+| `GET /api/me/entries?address=0x…` | My Entries | wallet address | `{ ok, entries: { competition, entryIndex, prediction, rank, error, payout, refund }[] }` |
+| `GET /api/activity?limit=20` | Optional live feed | none | `{ ok, available, items: { competitionId, at, text, event, txHash }[] }` |
+| `GET /api/me/balance?address=0x…` | Header balance, pre-entry check | wallet address | `{ ok, balance }` |
+| `POST /api/faucet` | "Get test USDC" button | header `Authorization: Bearer <Privy access token>` | `{ ok, alreadyFunded, txHash, amount, balance }` |
+| `POST /api/admin/settle` | `/admin` page | header `x-admin-secret`; body `{ competitionId, finalMetric }` | `{ ok, txHash, status: "Settled" \| "Cancelled" }` |
+| `POST /api/admin/cancel` | `/admin` page | header `x-admin-secret`; body `{ competitionId }` | `{ ok, txHash, status, refunded }` |
+| `GET /api/admin/status` | `/admin` page | header `x-admin-secret` | wallet balances, database state, all competitions |
+| `GET /api/admin/youtube?videoId=` | `/admin` page (optional) | header `x-admin-secret` | `{ ok, viewCount }` |
+| `POST /api/streams/webhook` | QuickNode Stream | signed by QuickNode | `{ ok, stored }` |
+
+`Summary`: `id, songId, title, artist, artworkUrl, song (display data from apps/web/lib/songs.ts), metric, phase ("open" | "closed" | "settled" | "cancelled"), closesAt, secondsLeft, entryFee, pot, numEntries, minEntries, maxEntries, finalMetric, prizes { winners[], artist, platform }, split`. `phase: "closed"` means entries are closed and the result hasn't been submitted yet. Prizes are projected from the current pot while open, actual once settled.
+
+`Entry`: `entryIndex, name, isYou, prediction, rank, error, payout, refund`. While open, entries are in entry order and `rank`/`payout` are null. Once settled they're ranked with the contract's rule. If cancelled, every entry has a `refund`.
+
+The browser still sends `approve` and `enter` itself through the Privy wallet. The backend never holds user keys.
+
 ## Still open
-- The three demo songs (title, artist, YouTube link, artist payout wallet)
+- The three demo songs (title, artist, YouTube link, artist payout wallet). Song display data lives in `apps/web/lib/songs.ts`, keyed by `metadataURI`.
 - The product name
-- The faucet drip amount (proposed: $20, enough for 4 entries)
+- The faucet drip amount. Proposed: **$10** (`FAUCET_DRIP_USDC`), enough for two entries plus gas. A wallet can enter each of the 3 demo competitions once, so $15 would cover all three.
