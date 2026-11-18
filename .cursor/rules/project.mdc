@@ -6,8 +6,8 @@ alwaysApply: true
 - Stack is Next.js App Router with TypeScript in `apps/web`, deployed on Vercel. Foundry and Solidity ^0.8.24 in `contracts/`.
 - Product name only in `apps/web/brand.config.ts`.
 - Never hardcode keys or addresses; read from env.
-- Fans never put in money; do not add share or token sales for fans.
+- Fans pay only a fixed USDC entry fee into a competition; do not add share or token sales.
 - Keep contracts small and add a Foundry test for every state change.
-- Royalty ingestion is simulated in the demo and must be labeled that way in the UI.
-- Do not add features outside `docs/ARCHITECTURE.md` without asking.
+- Testnet USDC only; label the app as a testnet prototype in the UI.
+- Do not add features outside `docs/ARCHITECTURE.md` and `docs/PLAN.md` without asking.
 - Crypto must be invisible in the UI: show dollars, never addresses or gas.
