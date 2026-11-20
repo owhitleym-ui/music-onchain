@@ -1,0 +1,19 @@
+{
+  "compiler": "0.8.28+commit.7893614a",
+  "evmVersion": "cancun",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "viaIR": false,
+  "chainTarget": 5042002,
+  "deployed": false,
+  "atomicFour": true,
+  "sourceSha256": {
+    "src/MusicPredictionContest.sol": "8109e65d3bd543c97f17cd7a77122fea1d9597c4ff20cd5d2b0cba70d663236f",
+    "src/RewardCurve.sol": "010891e1820456708d01be9c2c5383b310ba82a194f0006a8615237be4c52640"
+  },
+  "runtimeBytecodeBytes": 21603,
+  "creationBytecodeBytes": 22046,
+  "abiSha256": "6c1590bfd36a9899e280f50642d87cbaff2ae0a3f7ba64bb901a5699313977f8"
+}

@@ -1,0 +1,24 @@
+{
+  "deploymentId": "markets-v3",
+  "marketModelVersion": 3,
+  "chainId": 5042002,
+  "address": "0xe3afdbf235e902de46418535f25ca4e23f9fdf92",
+  "atomicFour": true,
+  "creationBlock": 73174808,
+  "deploymentTransaction": "0x7d7079328be4aacf77052a047ab0dbd0c1c1e79dbb3f725135a1eb9361c5dbfb",
+  "runtimeSha256": "ea12c485bfe53324aade7b64a843ac9c86ae9ca6e344e34937e9b7978c397e0e",
+  "compiler": "0.8.28",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "evmVersion": "cancun",
+  "viaIR": false,
+  "owner": "0x170249f9ac07d25f97bc1957b68a0011543d07ad",
+  "oracle": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "platformRecipient": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "initialExcluded": [
+    "0x170249f9ac07d25f97bc1957b68a0011543d07ad"
+  ],
+  "verifiedAt": "2026-11-20T10:50:04.557Z"
+}

@@ -1,0 +1,16 @@
+{
+  "solc": {
+    "version": "0.8.28+commit.7893614a",
+    "platform": "macosx-amd64",
+    "sha256": "81515b0e53deaa266d549545ccaac0a5a96e6d4e8201c77f673b2c710976d9ea"
+  },
+  "arc-foundry": {
+    "release": "v0.8.0-4",
+    "platform": "aarch64-apple-darwin",
+    "sha256": "a99228f3403b3547e35c518387f9ad020e4293ac5e8ef4da7899a5495cf2e3e9"
+  },
+  "libusb": {
+    "version": "1.0.29",
+    "sha256": "5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85"
+  }
+}

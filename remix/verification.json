@@ -1,0 +1,13 @@
+{
+  "compiler": "0.8.28+commit.7893614a",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "evmVersion": "cancun",
+  "viaIR": true,
+  "fileSha256": "1a775c730fd19e7983b919bff8ad66e47bd151dde9df31a34f19f7fd99545a82",
+  "normalizedAbiMatchesTestedContract": true,
+  "executableRuntimeMatchesTestedContractExcludingSolidityMetadata": true,
+  "deployed": false
+}

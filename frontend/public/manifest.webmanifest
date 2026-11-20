@@ -1,0 +1,13 @@
+{
+  "name": "ampramp",
+  "short_name": "ampramp",
+  "description": "Predict how big a song gets. Support the artist.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F7F9FC",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    { "src": "/brand/png/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/png/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

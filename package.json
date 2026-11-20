@@ -1,0 +1,10 @@
+{
+  "name": "music-predictions-local",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node backend/tools/dev.mjs",
+    "test": "npm --prefix backend test && npm --prefix frontend test",
+    "build": "npm --prefix frontend run build"
+  }
+}

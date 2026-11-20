@@ -1,0 +1,28 @@
+{
+  "name": "music-account-approval-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env.local src/server.js",
+    "test": "node --test test/*.test.mjs",
+    "setup": "node tools/setup.mjs",
+    "admin": "node --env-file-if-exists=.env.local tools/admin.mjs",
+    "events": "node --env-file-if-exists=.env.local tools/events.mjs",
+    "results": "node --env-file-if-exists=.env.local tools/results.mjs",
+    "markets": "node --env-file-if-exists=.env.local tools/markets.mjs",
+    "retire-hourly": "node --env-file-if-exists=.env.local tools/retire-hourly.mjs",
+    "chartex": "node --env-file-if-exists=.env.local tools/chartex.mjs"
+  },
+  "dependencies": {
+    "@privy-io/node": "0.41.0",
+    "@supabase/supabase-js": "2.119.2",
+    "viem": "2.58.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.17"
+  }
+}

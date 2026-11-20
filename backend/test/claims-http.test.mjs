@@ -1,0 +1,25 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {once} from 'node:events';
+import {createHandler} from '../src/http.js';
+import {AppError} from '../src/errors.js';
+const id='10000000-0000-4000-8000-000000000001';
+test('claim routes authenticate identity, restrict methods and bodies, and expose no operator endpoint',async t=>{
+ const calls=[],identity={userId:'did:privy:one',wallet:'0x'+'a'.repeat(40)};
+ const claims={list:async i=>{calls.push(i);return {claims:[]};},get:async(_id,i)=>{calls.push(i);throw new AppError('CLAIM_NOT_FOUND',404);},create:async(i,b,key)=>{calls.push({i,b,key});return {id,status:'awaiting_signature'};},signed:async(_id,i,raw)=>{calls.push({i,raw});return {id,status:'prepared'};},cancel:async()=>({id,status:'cancelled'})};
+ const server=createServer(createHandler({claims,authenticate:async token=>{if(token!=='Bearer good')throw new AppError('AUTH_REQUIRED',401);return identity;},approvalService:async()=>({status:'approved'})}));server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>server.close());
+ const base='http://127.0.0.1:'+server.address().port;
+ const req=(path,method='GET',body,token='good')=>fetch(base+path,{method,headers:{Authorization:'Bearer '+token,'Content-Type':'application/json','Idempotency-Key':id},...(body?{body:JSON.stringify(body)}:{})});
+ assert.equal((await req('/api/claims','GET',null,'bad')).status,401);
+ assert.equal((await req('/api/claims')).status,200);assert.deepEqual(calls.pop(),identity);
+ assert.equal((await req('/api/claims','POST',{entryId:'2'})).status,200);assert.deepEqual(calls.pop(),{i:identity,b:{entryId:'2'},key:id});
+ assert.equal((await req('/api/claims/'+id+'/signed','POST',{signedTransaction:'0x12'})).status,202);assert.deepEqual(calls.pop(),{i:identity,raw:'0x12'});
+ assert.equal((await req('/api/claims/'+id+'/signed','POST',{signedTransaction:'0x12',wallet:identity.wallet})).status,400);
+ assert.equal((await req('/api/claims/'+id,'DELETE',{wallet:identity.wallet})).status,400);
+ assert.equal((await req('/api/claims/'+id,'PUT')).status,405);
+ assert.equal((await req('/api/claims?wallet='+identity.wallet)).status,400);
+ assert.equal((await req('/api/claims/'+id)).status,404);
+ assert.equal((await req('/api/admin/submit-result','POST',{})).status,404);
+ assert.equal((await req('/api/claims','POST',{entryId:'2'},'bad')).status,401);
+});

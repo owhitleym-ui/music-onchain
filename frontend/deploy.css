@@ -1,0 +1,29 @@
+.deployment-page { font-size: 16px; background: var(--background); }
+.deployment-shell { max-width: 800px; margin: 0 auto; padding: 32px 24px 60px; }
+.deployment-shell > .text-button { font-size: 14px; }
+.deployment-heading { margin: 32px 0; }
+.deployment-network { display: inline-block; font-size: 14px; color: var(--blue); background: var(--blue-soft); padding: 5px 10px; border-radius: 6px; margin-bottom: 15px; }
+.deployment-heading h1 { font-size: clamp(30px, 5vw, 40px); letter-spacing: -1px; margin: 0 0 12px; line-height: 1.15; }
+.deployment-heading p { color: var(--muted); max-width: 620px; margin: 0; }
+.deployment-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 26px; margin-bottom: 20px; }
+.deployment-card h2 { font-size: 20px; letter-spacing: -.4px; margin-bottom: 16px; }
+.deployment-card p { color: var(--muted); margin-bottom: 16px; }
+.deployment-card .button { font-size: 15px; min-height: 44px; white-space: normal; }
+.deployment-card .text-button { font-size: 14px; }
+.deployment-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.deployment-address { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; display: block; overflow-wrap: anywhere; font-size: 14px; margin: 8px 0; color: var(--text); }
+.deployment-card label { display: block; font-size: 15px; font-weight: 600; margin-top: 20px; }
+.deployment-card input { width: 100%; display: block; margin-top: 7px; border: 1px solid var(--border); border-radius: 7px; padding: 11px 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+.deployment-card label > span { display: block; color: var(--muted); font-size: 14px; font-weight: 400; margin-top: 7px; }
+.deployment-card .deployment-hint { font-size: 14px; margin: 16px 0; }
+.deployment-card .deployment-hint a { color: var(--blue); text-decoration: underline; }
+.deployment-error { color: var(--red) !important; font-size: 14px; margin: 14px 0 0; }
+.deployment-error:empty { display: none; }
+.deployment-details { margin: 0 0 20px; }
+.deployment-details > div { border-bottom: 1px solid var(--border); padding: 10px 0; }
+.deployment-details dt { color: var(--muted); font-size: 14px; }
+.deployment-details dd { margin: 4px 0 0; overflow-wrap: anywhere; }
+.deployment-footnote { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.deployment-success { color: var(--green); font-weight: 600; }
+#deployment-result a { display: inline-block; margin-bottom: 12px; color: var(--blue); font-size: 14px; text-decoration: underline; }
+@media (max-width: 599px) { .deployment-shell { padding: 24px 16px 40px; } .deployment-card { padding: 20px; } .deployment-card .button { width: 100%; } }

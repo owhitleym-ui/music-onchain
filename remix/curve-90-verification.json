@@ -1,0 +1,27 @@
+{
+  "sourceSha256": "d156c0f1f6574bbf80f4dec2b3019426ea83784c5b2c1f70c3d4b57f26b1e97c",
+  "compilations": [
+    {
+      "viaIR": true,
+      "runtimeBytecodeBytes": 18242,
+      "creationBytecodeBytes": 18619,
+      "warnings": [
+        "Warning: This declaration shadows an existing declaration.\n   --> MusicPredictionContest90.sol:615:5:\n    |\n615 |     uint256 sd;\n    |     ^^^^^^^^^^\nNote: The shadowed declaration is here:\n    --> MusicPredictionContest90.sol:3181:1:\n     |\n3181 | function sd(int256 x) pure returns (SD59x18 result) {\n     | ^ (Relevant source part starts here and spans across multiple lines).\n\n",
+        "Warning: This declaration shadows an existing declaration.\n    --> MusicPredictionContest90.sol:2310:5:\n     |\n2310 |     function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {\n     |     ^ (Relevant source part starts here and spans across multiple lines).\nNote: The shadowed declaration is here:\n   --> MusicPredictionContest90.sol:439:1:\n    |\n439 | function mulDiv(uint256 x, uint256 y, uint256 denominator) pure returns (uint256 result) {\n    | ^ (Relevant source part starts here and spans across multiple lines).\n\n",
+        "Warning: This declaration shadows an existing declaration.\n    --> MusicPredictionContest90.sol:2394:5:\n     |\n2394 |     function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {\n     |     ^ (Relevant source part starts here and spans across multiple lines).\nNote: The shadowed declaration is here:\n   --> MusicPredictionContest90.sol:439:1:\n    |\n439 | function mulDiv(uint256 x, uint256 y, uint256 denominator) pure returns (uint256 result) {\n    | ^ (Relevant source part starts here and spans across multiple lines).\n\n"
+      ],
+      "matchesTestedRuntimeExceptMetadata": true
+    },
+    {
+      "viaIR": false,
+      "runtimeBytecodeBytes": 21149,
+      "creationBytecodeBytes": 21592,
+      "warnings": [
+        "Warning: This declaration shadows an existing declaration.\n   --> MusicPredictionContest90.sol:615:5:\n    |\n615 |     uint256 sd;\n    |     ^^^^^^^^^^\nNote: The shadowed declaration is here:\n    --> MusicPredictionContest90.sol:3181:1:\n     |\n3181 | function sd(int256 x) pure returns (SD59x18 result) {\n     | ^ (Relevant source part starts here and spans across multiple lines).\n\n",
+        "Warning: This declaration shadows an existing declaration.\n    --> MusicPredictionContest90.sol:2310:5:\n     |\n2310 |     function mulDiv(uint256 x, uint256 y, uint256 denominator) internal pure returns (uint256 result) {\n     |     ^ (Relevant source part starts here and spans across multiple lines).\nNote: The shadowed declaration is here:\n   --> MusicPredictionContest90.sol:439:1:\n    |\n439 | function mulDiv(uint256 x, uint256 y, uint256 denominator) pure returns (uint256 result) {\n    | ^ (Relevant source part starts here and spans across multiple lines).\n\n",
+        "Warning: This declaration shadows an existing declaration.\n    --> MusicPredictionContest90.sol:2394:5:\n     |\n2394 |     function mulDiv(uint256 x, uint256 y, uint256 denominator, Rounding rounding) internal pure returns (uint256) {\n     |     ^ (Relevant source part starts here and spans across multiple lines).\nNote: The shadowed declaration is here:\n   --> MusicPredictionContest90.sol:439:1:\n    |\n439 | function mulDiv(uint256 x, uint256 y, uint256 denominator) pure returns (uint256 result) {\n    | ^ (Relevant source part starts here and spans across multiple lines).\n\n"
+      ],
+      "matchesTestedRuntimeExceptMetadata": false
+    }
+  ]
+}
