@@ -1,0 +1,41 @@
+{
+  "chainId": 5042002,
+  "address": "0x003043208750D205F98AC1D9ae670d2d2A19797C",
+  "contractName": "MusicPredictionContest",
+  "curveScale": "0.9",
+  "verificationBlock": 73067979,
+  "verificationDateCentral": "2026-11-19",
+  "owner": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "oracle": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "platformRecipient": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "compiler": "0.8.28+commit.7893614a",
+  "compilerSettings": {
+    "evmVersion": "cancun",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "viaIR": false
+  },
+  "runtimeBytecodeBytes": 21149,
+  "runtimeSha256": "c4639a7ce4d6a096727270d2be139165a68c0a02f1dacddacdd750c721634e2d",
+  "executableMatchesPreparedSourceExcludingMetadata": true,
+  "standardTestsPassedWithDeployedSettings": 40,
+  "firstRankRateWad": "900000000000000000",
+  "spotPriceNativeUnits": "5000000000000000000",
+  "bundlePriceNativeUnits": "50000000000000000000",
+  "sourceSha256": {
+    "src/MusicPredictionContest.sol": "fbc8f6fee330c852261505c09c88b11f101971e3db18a5968ad1d9d1312af8d8",
+    "src/RewardCurve.sol": "010891e1820456708d01be9c2c5383b310ba82a194f0006a8615237be4c52640"
+  },
+  "previousContract": "0x622DE243e71358e258925Efa3968bdE5837acea9",
+  "frontendPaymentsConnected": false,
+  "explorerUrl": "https://explorer.testnet.arc.io/address/0x003043208750D205F98AC1D9ae670d2d2A19797C",
+  "notes": "Live executable matches Solidity 0.8.28, optimizer 200, Cancun, viaIR false after metadata removal and immutable substitution. The original local artifact uses viaIR true; retain actual deployment settings for explorer verification.",
+  "arcRuntimeTestsPassedWithDeployedSettings": 40,
+  "arcIsolatedMaxOrderBatchGas": 3307661,
+  "arcIsolatedMaxProgressBatchGas": 3783255,
+  "currentOwner": "0x170249f9ac07d25f97bc1957b68a0011543d07ad",
+  "ownershipAcceptanceTransaction": "0xb4f009c68d6f7bdf0715e379500543e7a0c8586c49778278f757eefe774f7630",
+  "ownershipUpdatedDateCentral": "2026-11-19"
+}

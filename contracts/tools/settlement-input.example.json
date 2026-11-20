@@ -1,0 +1,9 @@
+{
+  "actualViews": "100",
+  "entries": [
+    { "id": "1", "firstTicketId": "0", "spots": 1, "guess": "90", "purchasedAt": "2000001600" },
+    { "id": "2", "firstTicketId": "1", "spots": 1, "guess": "110", "purchasedAt": "2000001600" },
+    { "id": "3", "firstTicketId": "2", "spots": 1, "guess": "90", "purchasedAt": "2000001601" },
+    { "id": "4", "firstTicketId": "3", "spots": 1, "guess": "100", "purchasedAt": "2000001602" }
+  ]
+}

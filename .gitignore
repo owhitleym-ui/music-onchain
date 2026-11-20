@@ -161,3 +161,29 @@ contracts/lib/
 # Secrets
 .env.*
 !.env.example
+
+# Original music prediction project
+.DS_Store
+.env
+.env.*
+!.env.example
+**/node_modules/
+**/dist/
+music-onchain-review/
+_references/
+_publish/
+contracts/.tools/
+contracts/lib/
+contracts/out/
+contracts/cache/
+contracts/cache-*/
+
+backend/.local/
+backend/coverage/
+backend/*.log
+
+__pycache__/
+*.pyc
+
+# Exclude dependency links as well as folders
+node_modules

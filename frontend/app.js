@@ -1,5 +1,6 @@
 import {payments,paymentOption} from './payments.js';
-import {accountPurchaseMarkup,orderModal} from './payment-ui.js';
+import {accountPurchaseMarkup,orderModal,entryModal,nativeDollars} from './payment-ui.js';
+import {liveCount,liveAverage,freshness} from './live-format.js';
 import { HOUR, HORIZONS, artists, songs, currentRoundStart, getHistory } from './data.js';
 import { createInitialState, loadState, saveState, toggleFollow, setTheme, PURCHASES_PAUSED, getRoundSummary, getPortfolio, getPurchaseStatus } from './store.js';
 import { icon } from './icons.js';
@@ -20,7 +21,7 @@ const settingsRoot = document.querySelector('#settings-root');
 const artistFor = song => artists.find(artist => artist.id === song.artistId);
 const horizonFor = id => HORIZONS.find(horizon => horizon.id === id) || HORIZONS[0];
 const money = formatDollars;
-const number = (value, decimals = 0) => new Intl.NumberFormat('en-US', { maximumFractionDigits: decimals }).format(value);
+const number = (value, decimals = 0) => value == null ? '—' : new Intl.NumberFormat('en-US', { maximumFractionDigits: decimals }).format(typeof value === 'string' && /^\d+$/.test(value) ? BigInt(value) : value);
 const signedMoney = cents => `${cents > 0 ? '+' : cents < 0 ? '−' : ''}${money(Math.abs(cents))}`;
 const profitClass = cents => cents > 0 ? 'positive' : cents < 0 ? 'negative' : 'muted';
 const esc = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
@@ -38,7 +39,7 @@ function measurement(roundStart, horizonId) {
 }
 
 function countdown(end) {
-  const seconds = Math.max(0, Math.floor((end - Date.now()) / 1000));
+  const seconds = Math.max(0, Math.floor((end - payments.serverNow()) / 1000));
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
@@ -47,21 +48,25 @@ function route() {
   const params = new URLSearchParams(query);
   const songId = params.get('song') || ui.lastSong;
   const song = songs.find(item => item.id === songId) || songs[0];
-  const roundParam = Number(params.get('round'));
-  const roundStart = params.has('round') && Number.isSafeInteger(roundParam) && roundParam % HOUR === 0 && (roundParam <= currentRoundStart() || payments.getState().catalog?.rounds?.some(r=>r.start===roundParam)) ? roundParam : currentRoundStart();
-  let actualStart=roundStart;
-  if(song.id==='last-bus-home'&&payments.getState().catalog?.ready){
-    const chosen=payments.currentRound(roundStart);
-    if(chosen&&(!params.has('round')||roundStart===currentRoundStart()||chosen.start===roundStart))actualStart=chosen.start;
+  let roundStart=currentRoundStart(),liveRoundId=null;
+  if(song.id==='last-bus-home') {
+    const rounds=payments.getState().catalog?.rounds??[];
+    const chosen=params.has('roundId')?rounds.find(r=>r.id===params.get('roundId'))
+      :params.has('round')?rounds.find(r=>r.start===Number(params.get('round'))):payments.currentRound();
+    roundStart=chosen?.start??null;liveRoundId=chosen?.id??null;
+  } else {
+    const value=Number(params.get('round'));
+    if(params.has('round')&&Number.isSafeInteger(value)&&value%HOUR===0&&value<=currentRoundStart())roundStart=value;
   }
-  return {
-    page: ['discover', 'support', 'purchases'].includes(page) ? page : 'discover',
-    song, roundStart:actualStart, horizon: horizonFor(params.get('horizon')).id,
-    tab: params.get('tab') === 'subscribed' ? 'subscribed' : 'all',
-  };
+  return {page:['discover','support','purchases'].includes(page)?page:'discover',song,roundStart,liveRoundId,
+    horizon:horizonFor(params.get('horizon')).id,tab:params.get('tab')==='subscribed'?'subscribed':'all'};
 }
 
-function songLink(songId, horizon = '24h', roundStart = currentRoundStart()) {
+function songLink(songId,horizon='24h',roundStart=currentRoundStart()) {
+  if(songId==='last-bus-home') {
+    const chosen=payments.getState().catalog?.rounds?.find(r=>r.start===roundStart)||payments.currentRound();
+    return `#support?song=last-bus-home${chosen?'&roundId='+encodeURIComponent(chosen.id):''}&horizon=${horizon}`;
+  }
   return `#support?song=${encodeURIComponent(songId)}&round=${roundStart}&horizon=${horizon}`;
 }
 
@@ -184,12 +189,11 @@ function cover(song, small = false) {
 
 function songCard(song, index) {
   const artist = artistFor(song);
-  let summary = getRoundSummary(state, song.id, currentRoundStart(), '24h');
-  let liveCard=false;
-  if(song.id==='last-bus-home'&&payments.getState().catalog?.ready){
-    liveCard=true;
-    const r=payments.currentRound(currentRoundStart()),p=r?payments.getState().pools[r.id+':24h']:null;
-    summary={...summary,spotCount:p?Number(p.spotCount):null};
+  const liveCard=song.id==='last-bus-home';
+  let summary=liveCard?{spotCount:null}:getRoundSummary(state,song.id,currentRoundStart(),'24h');
+  if(liveCard) {
+    const r=payments.currentRound(),p=r?payments.getState().pools[r.id+':24h']:null;
+    summary={spotCount:p?.spotCount??null};
   }
   return `<article class="song-card" data-action="open-song" data-song="${song.id}">
     <div class="cover-container"><a href="${songLink(song.id)}" aria-label="Predict views for ${esc(song.title)}">${cover(song)}</a><span class="card-number">${String(index + 1).padStart(2, '0')}</span>${followButton(artist, 'card-follow', false)}</div>
@@ -235,38 +239,44 @@ function renderDiscover() {
 function renderSupport(context) {
   const { song, roundStart, horizon } = context;
   const artist = artistFor(song);
-  const paymentState=payments.getState();
-  const liveRound=song.id==='last-bus-home'&&paymentState.catalog?.ready?paymentState.catalog.rounds.find(r=>r.start===roundStart):null;
-  const summaries = Object.fromEntries(HORIZONS.map(item => {
-    const snapshot=liveRound?paymentState.pools[liveRound.id+':'+item.id]:null;
-    return [item.id,liveRound?{average:snapshot?.average??null,mode:snapshot?.mode??'—',modeSpots:snapshot?.modeSpots??0,spotCount:Number(snapshot?.spotCount??0),peopleCount:Number(snapshot?.peopleCount??0),totalEnteredCents:Number(BigInt(snapshot?.totalDeposits??0)/10000000000000000n)}:getRoundSummary(state,song.id,roundStart,item.id)];
+  const paymentState=payments.getState(),liveSong=song.id==='last-bus-home';
+  const liveRound=liveSong?paymentState.catalog?.rounds?.find(r=>r.id===context.liveRoundId):null;
+  if(liveSong&&!liveRound) {
+    const message=paymentState.catalogError||(!paymentState.catalog?'Checking live test rounds…':paymentState.catalog.ready?'No matching test round is scheduled. Choose the current round or refresh.':paymentState.catalog.message||'Live test rounds are unavailable.');
+    return `<main class="page-shell support-page"><a class="breadcrumb" href="#discover">${icon('back')} All songs</a><h1 class="page-title">${esc(song.title)}</h1><section class="panel live-round-empty"><h2 class="panel-title">Test contest</h2><p role="status">${esc(message)}</p><button class="button secondary" data-action="payments-refresh">Refresh</button><button class="button secondary" data-action="current-round">Open current round</button></section></main>`;
+  }
+  const summaries=Object.fromEntries(HORIZONS.map(item=>{
+    const p=liveRound?paymentState.pools[liveRound.id+':'+item.id]:null;
+    return [item.id,liveSong?(p??{average:null,averageGuess:null,mode:null,modeSpots:null,spotCount:null,peopleCount:null,totalDeposits:null}):getRoundSummary(state,song.id,roundStart,item.id)];
   }));
-  const summary = summaries[horizon];
-  const livePool=liveRound?paymentState.pools[liveRound.id+':'+horizon]:null;
-  const open = liveRound?Boolean(livePool?.open):Date.now()>=roundStart&&Date.now()<roundStart+HOUR;
+  const summary=summaries[horizon],livePool=liveRound?paymentState.pools[liveRound.id+':'+horizon]:null;
+  const snapshot=liveRound?paymentState.roundSnapshots[liveRound.id]:null;
+  const now=liveSong?payments.serverNow():Date.now();
+  const open=liveSong?Boolean(livePool?.open&&now>=roundStart&&now<liveRound.deadline):now>=roundStart&&now<roundStart+HOUR;
   const currentAccount=account.getState();
-  const canPay=Boolean(liveRound&&open&&currentAccount.authenticated&&currentAccount.approvalStatus==='approved'&&!paymentState.busy);
-  const entryMessage=liveRound?(open?'Test entries use your demo account balance. Network fees are additional.':Date.now()<roundStart?'This test round has not opened yet.':'Entries are closed for this test round.'):song.id==='last-bus-home'?(paymentState.catalogError||paymentState.catalog?.message||(paymentState.catalog?.ready?'The next test round has not been scheduled yet.':'Preparing the test contest…')):PURCHASES_PAUSED;
+  const canPay=Boolean(liveRound&&open&&snapshot?.chainAvailable!==false&&currentAccount.authenticated&&currentAccount.approvalStatus==='approved'&&!paymentState.busy);
+  const entryMessage=liveRound?(paymentState.catalogError||snapshot?.syncStatus==='unavailable'?'Live details cannot refresh right now. Your saved purchases are unchanged.':!livePool?'Checking this round…':open?'Test entries use your demo account balance. Network fees are additional.':now<roundStart?'This test round has not opened yet.':'Entries are closed for this test round.'):PURCHASES_PAUSED;
   const selected = horizonFor(horizon);
   return `<main class="page-shell support-page">
     <a class="breadcrumb" href="#discover">${icon('back')} All songs</a>
     <div class="song-page-heading"><div class="song-heading-meta"><div class="song-avatar" style="--cover-color:${artist.color}">${esc(artist.initials)}</div><div><p class="eyebrow">${liveRound?'Test contest · Simulated music statistics':'TikTok · BGM video views <span class="sample-inline">/ Sample data</span>'}</p><h1 class="page-title">${esc(song.title)}</h1><p class="song-artist">${esc(artist.name)} <span class="genre-tag">${esc(artist.genre)}</span></p></div></div><button class="button secondary small" data-action="rules">${icon('info')} How rewards work</button></div>
+    ${liveRound?`<div class="live-round-toolbar"><label class="field-label" for="live-round-select">Test round<select class="select-input" id="live-round-select">${paymentState.catalog.rounds.map(r=>`<option value="${esc(r.id)}" ${r.id===liveRound.id?'selected':''}>${dateTime(r.start)} CT · ${r.entryStatus??'test round'}</option>`).join('')}</select></label><p class="live-freshness" role="status">${esc(freshness(snapshot,paymentState.catalogError))}</p></div>`:''}
     <div class="support-layout"><div class="support-main">
-      <section class="panel chart-panel"><div class="panel-heading"><div><h2 class="panel-title">Follow the momentum</h2><p class="muted chart-subtitle">Views in the 24 hours ending at each point</p></div><div class="segmented-control chart-controls" aria-label="Historical chart range">${[3, 7, 30].map(days => `<button data-action="history-days" data-days="${days}" class="${ui.historyDays === days ? 'active' : ''}" aria-pressed="${ui.historyDays === days}">${days}D</button>`).join('')}</div></div>
-      <div class="chart-wrap">${renderChart({ history: getHistory(song.id, roundStart, ui.historyDays), roundStart, summaries, selectedHorizon: horizon, horizons: HORIZONS })}</div>
-      <div class="chart-legend"><span><i class="legend-line solid"></i>Past views</span><span><i class="legend-line dashed"></i>Crowd average</span><span class="chart-note">Select a future point to predict</span></div></section>
+      <section class="panel chart-panel"><div class="panel-heading"><div><h2 class="panel-title">Follow the momentum</h2><p class="muted chart-subtitle">${liveSong?'Simulated music views · actual crowd predictions':'Views in the 24 hours ending at each point'}</p></div><div class="segmented-control chart-controls" aria-label="Historical chart range">${[3, 7, 30].map(days => `<button data-action="history-days" data-days="${days}" class="${ui.historyDays === days ? 'active' : ''}" aria-pressed="${ui.historyDays === days}">${days}D</button>`).join('')}</div></div>
+      <div class="chart-wrap">${renderChart({ history: getHistory(song.id, roundStart, ui.historyDays), roundStart, summaries, selectedHorizon: horizon, horizons: HORIZONS, live: liveSong })}</div>
+      <div class="chart-legend"><span><i class="legend-line solid"></i>Simulated past views</span><span><i class="legend-line dashed"></i>${liveSong?'Actual crowd average':'Sample crowd average'}</span><span class="chart-note">Select a future point to predict</span></div></section>
       <section class="panel prediction-panel"><div class="panel-heading"><h2 class="panel-title">Make your prediction</h2><span class="badge ${open ? 'blue' : 'orange'}">${open ? (liveRound ? 'Entries open' : 'Purchases paused') : 'Entries closed'}</span></div>
       <div class="horizon-tabs" role="group" aria-label="Choose a prediction window">${HORIZONS.map(item => `<button class="${item.id === horizon ? 'selected' : ''}" data-action="select-horizon" data-horizon="${item.id}" aria-pressed="${item.id === horizon}"><span class="horizon-title">${item.label}</span><span class="horizon-detail">${item.id === '24h' ? 'First day' : item.id === '48h' ? 'Second day' : 'Seventh day'}</span></button>`).join('')}</div>
       <div class="window-box"><span class="window-label">Count new views during this period</span><span class="window-value">${measurement(roundStart, horizon)}</span></div>
-      <form id="prediction-form" class="prediction-form" novalidate><div class="prediction-grid"><label class="guess-field field-label" for="prediction-guess">Your guess, in views<input id="prediction-guess" name="guess" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. ${summary.mode==='—'?'30000':number(summary.mode)}" value="${esc(ui.guess)}" aria-describedby="guess-hint form-error" ${!open ? 'disabled' : ''} /></label>
+      <form id="prediction-form" class="prediction-form" novalidate><div class="prediction-grid"><label class="guess-field field-label" for="prediction-guess">Your guess, in views<input id="prediction-guess" name="guess" type="text" inputmode="numeric" autocomplete="off" placeholder="e.g. ${summary.mode==null?'30000':number(summary.mode)}" value="${esc(ui.guess)}" aria-describedby="guess-hint form-error" ${!open ? 'disabled' : ''} /></label>
       <fieldset class="amount-fieldset"><legend class="field-label">Choose your entry</legend><div class="amount-options">${ENTRY_PRICES_CENTS.map(amount => `<button type="button" class="amount-option ${ui.amount === amount ? 'selected' : ''}" data-action="amount" data-amount="${amount}" aria-pressed="${ui.amount === amount}" ${!open ? 'disabled' : ''}><span class="amount-top">${money(amount)}</span><span class="amount-bottom">${paymentOption(amount).spots===1?'1 spot':paymentOption(amount).spots+' identical spots'}</span>${amount === BUNDLE_PRICE_CENTS ? `<span class="bonus-label">Up to ${BUNDLE_MULTIPLIER.toFixed(2)}× reward</span>` : '<span class="standard-label">Standard entry</span>'}</button>`).join('')}</div></fieldset></div>
       <p id="guess-hint" class="fine-print">${ui.amount === BUNDLE_PRICE_CENTS ? 'Your one guess is entered ten times. A winning spot gets the 5% bonus only when its matched losing spot belongs to a different account. Spots paired within the same account use the standard reward.' : paymentOption(ui.amount).id==='four'?'Four separate $5 entries. Same guess. No bonus. All four are purchased together.':`One ${money(SPOT_PRICE_CENTS)} spot enters your guess in this round.`}</p>
       <p class="error-message" id="form-error" role="alert">${esc(ui.formError)}</p>
       <p class="purchase-paused" id="purchase-pause-notice">${esc(entryMessage)}</p><div class="purchase-footer">${open ? `<button class="button primary" type="submit" ${canPay?'':'disabled'} aria-describedby="purchase-pause-notice">${paymentState.busy?'Preparing purchase…':liveRound?'Review purchase':'Purchases paused'}</button>` : `<button class="button secondary" type="button" data-action="current-round">Open current round</button>`}</div></form></section>
     </div><aside class="support-sidebar">
       <section class="panel"><div class="artist-summary"><div class="artist-avatar" style="--cover-color:${artist.color}">${esc(artist.initials)}</div><div><span class="field-label">You’re supporting</span><h2 class="artist-heading">${esc(artist.name)}</h2></div></div>${followButton(artist, 'button secondary full-width')}<details class="artist-details"><summary>About the artist ${icon('down')}</summary><p class="artist-bio">${esc(artist.bio)}</p><p class="fine-print">The artist receives 2% of profit won in their contests.</p></details></section>
-      <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}">${countdown(roundStart + HOUR)}</strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
-      <section class="panel popular-panel"><h2 class="panel-title">Most popular guesses</h2><p class="fine-print">Most common value, counted by spots</p><table class="popular-table"><thead><tr><th scope="col">Window</th><th scope="col">Views</th><th scope="col">Spots</th></tr></thead><tbody>${HORIZONS.map(item => `<tr class="popular-row ${item.id === horizon ? 'selected' : ''}"><td><button class="text-button" data-action="select-horizon" data-horizon="${item.id}">${item.label}</button></td><td>${summaries[item.id].mode==='—'?'—':number(BigInt(summaries[item.id].mode))}</td><td>${summaries[item.id].modeSpots}</td></tr>`).join('')}</tbody></table><p class="fine-print">The chart shows the average. Tied popular guesses use the lower value.</p></section>
+      <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}">${countdown(roundStart + HOUR)}</strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${liveSong?(summary.totalDeposits==null?'—':nativeDollars(summary.totalDeposits)):money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
+      <section class="panel popular-panel"><h2 class="panel-title">Most popular guesses</h2><p class="fine-print">Most common value, counted by spots</p><table class="popular-table"><thead><tr><th scope="col">Window</th><th scope="col">Views</th><th scope="col">Spots</th></tr></thead><tbody>${HORIZONS.map(item => `<tr class="popular-row ${item.id === horizon ? 'selected' : ''}"><td><button class="text-button" data-action="select-horizon" data-horizon="${item.id}">${item.label}</button></td><td>${summaries[item.id].mode==null?'—':number(BigInt(summaries[item.id].mode))}</td><td>${liveCount(summaries[item.id].modeSpots)}</td></tr>`).join('')}</tbody></table><p class="fine-print">The chart shows the average. Tied popular guesses use the lower value.</p></section>
     </aside></div></main>`;
 }
 
@@ -327,6 +337,8 @@ function render() {
   }
   document.documentElement.dataset.theme = state.theme;
   app.innerHTML = renderHeader(context.page) + (context.page === 'support' ? renderSupport(context) : context.page === 'purchases' ? renderPurchases(context) : renderDiscover());
+  const chosenRound=context.page==='support'&&context.song.id==='last-bus-home'?context.liveRoundId:payments.currentRound()?.id??null;
+  payments.selectRound(chosenRound);
   app.inert = ui.settingsOpen || Boolean(ui.modal);
   document.title = `${context.page === 'support' ? context.song.title : context.page === 'purchases' ? 'My Purchases' : 'Discover'} · Music predictions`;
 }
@@ -337,6 +349,7 @@ function detailRows(rows) {
 
 function modalContent() {
   const modal = ui.modal;
+  if(modal.type==='live-entry-detail'){const ps=payments.getState();return entryModal(ps.entryGroups.find(g=>g.id===modal.id),{orders:ps.orders,snapshot:ps.entriesSnapshot});}
   if(modal.type==='live-confirm'||modal.type==='live-detail'){const ps=payments.getState();return orderModal(ps.orders.find(o=>o.id===modal.id),{rounds:ps.catalog?.rounds,error:ps.error,busy:ps.busy,confirm:modal.type==='live-confirm'});}
   if (modal.type === 'confirm') return { title: 'Purchases paused', body: `<p>${PURCHASES_PAUSED}</p>`, footer: '<button class="button primary" data-action="close-modal">Got it</button>' };
   if (modal.type === 'purchase') {
@@ -417,6 +430,7 @@ document.addEventListener('input', event => {
 });
 
 document.addEventListener('change', event => {
+  if(event.target.id==='live-round-select'){location.hash=`#support?song=last-bus-home&roundId=${encodeURIComponent(event.target.value)}&horizon=${route().horizon}`;return;}
   if (event.target.id === 'genre-filter') { ui.genre = event.target.value; refreshDiscoverResults(); }
   if (event.target.id === 'followed-filter') { ui.followedOnly = event.target.checked; refreshDiscoverResults(); }
   const count = Number(ui.genre !== 'all') + Number(ui.followedOnly);
@@ -499,6 +513,12 @@ document.addEventListener('click', event => {
     openModal({ type: 'purchase', id: target.dataset.id });
   } else if(action==='payments-refresh'){
     void payments.refresh();
+  } else if(action==='entries-next'){
+    void payments.nextEntries();
+  } else if(action==='entries-previous'){
+    void payments.previousEntries();
+  } else if(action==='entry-detail'){
+    openModal({type:'live-entry-detail',id:target.dataset.id});
   } else if(action==='live-detail'){
     const order=payments.getState().orders.find(o=>o.id===target.dataset.id);
     openModal({type:order?.status==='awaiting_signature'?'live-confirm':'live-detail',id:target.dataset.id});
@@ -550,7 +570,7 @@ setInterval(() => {
 
 render();
 account.subscribe(refreshAccountUI);
-document.addEventListener('visibilitychange', account.onVisibilityChange);
+document.addEventListener('visibilitychange',()=>{account.onVisibilityChange();if(!document.hidden)void payments.refresh();});
 
 let paymentRefreshTimer=null;
 payments.subscribe(()=>{
@@ -564,5 +584,5 @@ payments.subscribe(()=>{
   else if(action&&!account.getState().dialogOpen)(ui.modal?modalRoot:ui.settingsOpen?settingsRoot:app).querySelector(`[data-action="${action}"]:not([disabled])`)?.focus({preventScroll:true});
 });
 payments.start();
-paymentRefreshTimer=setInterval(()=>{if(!document.hidden)void payments.refresh();},10000);
+paymentRefreshTimer=setInterval(()=>{if(!document.hidden)void payments.poll();},1000);
 paymentRefreshTimer.unref?.();

@@ -1,0 +1,17 @@
+{
+  "forge-std": {
+    "repository": "https://github.com/foundry-rs/forge-std.git",
+    "revision": "77041d2ce690e692d6e03cc812b57d1ddaa4d505",
+    "release": "v1.9.7"
+  },
+  "openzeppelin-contracts": {
+    "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts.git",
+    "revision": "69c8def5f222ff96f2b5beff05dfba996368aa79",
+    "release": "v5.1.0"
+  },
+  "prb-math": {
+    "repository": "https://github.com/PaulRBerg/prb-math.git",
+    "revision": "3fbfb3e399b2271c344f79cf6a335d25aaac1f37",
+    "release": "release-v4"
+  }
+}

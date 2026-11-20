@@ -1,37 +1,28 @@
-# music-onchain (working name)
+# Music predictions
 
-Fans predict how many views a song gets. Closer guesses win, the top half is paid on a curve,
-losing entries only lose part of their stake, and every entry pays the artist. Runs on Arc
-testnet with test USDC only: no real money.
+Full project snapshot, including Step 5 live contest data integration. Arc Testnet prototype using test funds. Real two-account purchases and payout acceptance remain pending.
 
 ## Layout
 
-- `frontend/`: consumer app (Vite + React, Privy email login with embedded wallets). See
-  `frontend/README.md` and `frontend/DESIGN-HANDOFF.md`.
-- Backend API (`/api/...`): not in this repo yet. The frontend expects it at `/api`
-  (proxied to `127.0.0.1:3001` in local development).
+- `frontend/`: consumer app, email login, payments, live contest totals and private history.
+- `backend/`: authenticated APIs, account approval, payment processing, live reads and tests.
+- `contracts/`: Solidity source, ABI, deployment records, tooling and tests.
+- `supabase/`: QuickNode event receiver. Database migrations are in `backend/supabase/`.
+- `remix/`: deployment sources and verification artifacts.
 
 ## Run locally
 
 Requires Node 22.12 or newer.
 
 ```sh
-cd frontend
-npm ci
-cp .env.example .env.local
-npm run dev     # http://localhost:3000
+npm --prefix backend ci
+npm --prefix frontend ci
+cp backend/.env.example backend/.env.local
+cp frontend/.env.example frontend/.env.local
+# Configure private backend credentials locally, then:
+npm run dev
 ```
 
-## Deploy (Vercel)
+Open http://localhost:3000/. Backend listens on 127.0.0.1:3001. Apply database migrations in order when setting up a new database. Credentials, installed dependencies, generated build output and local backups are excluded from Git.
 
-- Root Directory: `frontend` (framework: Vite, output: `dist`)
-- Environment variable: `VITE_PRIVY_APP_ID` (public Privy App ID)
-
-## Rules
-
-- Never commit `.env` files or private keys.
-- Work on branches and open pull requests into `main`.
-
-## License
-
-MIT
+See [project notes](docs/music-prediction-project.md), [roadmap](PROJECT-ROADMAP.md), [backend verification](backend/VERIFICATION.md), [frontend verification](frontend/VERIFICATION.md), and [QuickNode setup](QUICKNODE-SETUP.md). The separate `frontend-design` branch remains the design collaboration baseline; review functional integration before merging design changes.

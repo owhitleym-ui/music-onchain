@@ -31,6 +31,8 @@ jobs:
           node-version: '22.20.0'
           package-manager-cache: false
       - run: npm ci
-      - run: npm run check:design
+      - name: Check protected design baseline on design branches
+        if: github.ref == 'refs/heads/frontend-design' || startsWith(github.ref, 'refs/heads/design/') || github.base_ref == 'frontend-design'
+        run: npm run check:design
       - run: npm test
       - run: npm run build

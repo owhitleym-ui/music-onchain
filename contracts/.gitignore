@@ -1,0 +1,9 @@
+lib/
+out/
+cache/
+.tools/
+.env
+.env.*
+!.env.example
+broadcast/
+__pycache__/

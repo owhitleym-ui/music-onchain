@@ -15,7 +15,7 @@ function smoothPath(points) {
   }, `M ${points[0].x},${points[0].y}`);
 }
 
-export function renderChart({ history, roundStart, summaries, selectedHorizon, horizons }) {
+export function renderChart({ history, roundStart, summaries, selectedHorizon, horizons, live = false }) {
   const width = 840;
   const height = 380;
   const left = 66;
@@ -25,31 +25,40 @@ export function renderChart({ history, roundStart, summaries, selectedHorizon, h
   const day = 86400000;
   const firstTime = history[0].time;
   const lastTime = roundStart + 7 * day;
-  const values = [...history.map(point => point.views), ...horizons.filter(h=>summaries[h.id].spotCount>0&&Number.isFinite(summaries[h.id].average)).map(horizon => summaries[horizon.id].average)];
-  const lowest = Math.min(...values);
-  const highest = Math.max(...values);
-  const step = Math.max(1000, Math.ceil((highest - lowest || highest / 3) / 4000) * 1000);
-  const min = Math.max(0, Math.floor(lowest / step - 1) * step);
-  const max = Math.ceil(highest / step + 1) * step;
+  const scaled=value=>{
+    if(value==null)return null;
+    const match=/^(\d+)(?:\.(\d+))?$/.exec(String(value));
+    if(!match)return null;
+    return BigInt(match[1])*100n+BigInt((match[2]??'').slice(0,2).padEnd(2,'0'));
+  };
+  const text=value=>{const v=scaled(value);if(v==null)return '—';const fraction=(v%100n).toString().padStart(2,'0').replace(/0+$/,'');return (v/100n).toLocaleString('en-US')+(fraction?'.'+fraction:'');};
+  const futureHorizons=horizons.filter(h=>BigInt(summaries[h.id].spotCount??0)>0n&&scaled(summaries[h.id].averageGuess??summaries[h.id].average)!=null);
+  const values=[...history.map(point=>scaled(point.views)),...futureHorizons.map(h=>scaled(summaries[h.id].averageGuess??summaries[h.id].average))];
+  const lowest=values.reduce((a,b)=>a<b?a:b),highest=values.reduce((a,b)=>a>b?a:b);
+  const span=highest-lowest||highest/3n||100n;
+  const step=((span+399999n)/400000n||1n)*100000n;
+  const min=lowest/step*step>step?lowest/step*step-step:0n;
+  const max=((highest+step-1n)/step+1n)*step;
   const x = time => left + (time - firstTime) / (lastTime - firstTime) * (right - left);
-  const y = views => bottom - (views - min) / (max - min) * (bottom - top);
+  const yScaled = value => bottom-Number((value-min)*1000000n/(max-min))/1000000*(bottom-top);
+  const y = views => yScaled(scaled(views));
   const historyPoints = history.map(point => ({ x: x(point.time), y: y(point.views) }));
-  const futurePoints = horizons.filter(h=>summaries[h.id].spotCount>0&&Number.isFinite(summaries[h.id].average)).map(horizon => ({ x: x(roundStart + horizon.endHours * 3600000), y: y(summaries[horizon.id].average), horizon }));
+  const futurePoints = futureHorizons.map(horizon => ({ x:x(roundStart+horizon.endHours*3600000), y:y(summaries[horizon.id].averageGuess??summaries[horizon.id].average), horizon }));
   const compactFuture = futurePoints.length>1 && futurePoints[1].x - futurePoints[0].x < 60;
   const last = historyPoints.at(-1);
   const averagePath = [last, ...futurePoints].map(point => `${point.x},${point.y}`).join(' ');
   const date = time => new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Chicago' }).format(time);
-  const numeric = value => new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value);
+  const numeric = text;
   const compact = value => new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
   const grids = Array.from({ length: 5 }, (_, i) => {
-    const value = min + (max - min) * i / 4;
-    return `<line x1="${left}" x2="${right}" y1="${y(value)}" y2="${y(value)}" class="chart-grid"/><text x="${left - 13}" y="${y(value) + 4}" text-anchor="end" class="chart-axis">${compact(value)}</text>`;
+    const value = min + (max - min) * BigInt(i) / 4n;
+    return `<line x1="${left}" x2="${right}" y1="${yScaled(value)}" y2="${yScaled(value)}" class="chart-grid"/><text x="${left - 13}" y="${yScaled(value) + 4}" text-anchor="end" class="chart-axis">${compact(value/100n)}</text>`;
   }).join('');
   const pastDates = [history[0], history[Math.floor((history.length - 1) / 2)]];
   const dateLabels = pastDates.map(point => `<text x="${x(point.time)}" y="${bottom + 27}" text-anchor="middle" class="chart-axis">${date(point.time)}</text>`).join('');
   return `<svg class="views-chart" viewBox="0 0 ${width} ${height}" role="group" aria-labelledby="views-chart-title views-chart-desc">
     <title id="views-chart-title">Daily video views and crowd predictions</title>
-    <desc id="views-chart-desc">The solid line shows sample historical views over trailing 24-hour windows. Dashed points show average guesses for the first, second, and seventh days. Select a point to choose a prediction window.</desc>
+    <desc id="views-chart-desc">The solid line shows simulated historical views over trailing 24-hour windows. Dashed points show ${live?'actual':'sample'} average guesses for the first, second, and seventh days. Select a point to choose a prediction window.</desc>
     <rect x="${x(roundStart)}" y="${top}" width="${right - x(roundStart)}" height="${bottom - top}" rx="3" class="chart-future"/>
     ${grids}
     <line x1="${x(roundStart)}" x2="${x(roundStart)}" y1="${top}" y2="${bottom}" class="chart-now-line"/>
@@ -59,7 +68,7 @@ export function renderChart({ history, roundStart, summaries, selectedHorizon, h
     <circle cx="${last.x}" cy="${last.y}" r="4" fill="${colors.blue}"/>
     ${futurePoints.map(point => {
       const selected = point.horizon.id === selectedHorizon;
-      const average = summaries[point.horizon.id].average;
+      const average = summaries[point.horizon.id].averageGuess??summaries[point.horizon.id].average;
       const labelOffset = compactFuture && point.horizon.id === '48h' ? 28 : compactFuture && point.horizon.id === '24h' ? -32 : -22;
       const tickOffset = compactFuture && point.horizon.id === '48h' ? 44 : 27;
       return `<g role="button" tabindex="0" data-action="select-horizon" data-horizon="${point.horizon.id}" aria-label="${point.horizon.label}, average guess ${numeric(average)} views" class="chart-point ${selected ? 'selected' : ''}">
@@ -68,7 +77,7 @@ export function renderChart({ history, roundStart, summaries, selectedHorizon, h
         ${selected ? `<circle cx="${point.x}" cy="${point.y}" r="13" fill="${colors.blue}" fill-opacity=".12"/>` : ''}
         <circle cx="${point.x}" cy="${point.y}" r="${selected ? 6 : 4.8}" fill="var(--surface)" stroke="${colors.blue}" stroke-width="2.5"/>
       </g>
-      <text x="${point.x}" y="${point.y + labelOffset}" text-anchor="${point.horizon.id === 'week' ? 'end' : 'middle'}" class="chart-value">${average >= 1000000 ? compact(average) : numeric(average)}</text>
+      <text x="${point.x}" y="${point.y + labelOffset}" text-anchor="${point.horizon.id === 'week' ? 'end' : 'middle'}" class="chart-value">${scaled(average)>=100000000n?compact(scaled(average)/100n):numeric(average)}</text>
       <text x="${point.x}" y="${bottom + tickOffset}" text-anchor="${point.horizon.id === 'week' ? 'end' : 'middle'}" class="chart-axis ${selected ? 'selected' : ''}">${point.horizon.label}</text>`;
     }).join('')}
     ${dateLabels}

@@ -1,3 +1,7 @@
+# Branch scope
+
+The full-project integration branch `codex/full-app-step5` contains the owner-authorized functional snapshot. It is not a design-only change. The design baseline and guard are retained unchanged for design collaboration; do not regenerate them to accept integration changes. The design-only guidance below applies to work targeting `frontend-design` or `design/**`.
+
 # Frontend design branch
 
 The user requested visual improvements to the original Vite/React consumer app

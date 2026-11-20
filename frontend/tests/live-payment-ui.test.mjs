@@ -10,7 +10,8 @@ test('desktop payment UI: four identical entries, explicit confirmation, account
  globalThis.fetch=async(url,options={})=>{let value;
  if(url==='/api/account/approval')value={status:'approved',walletAddress:wallet};
  else if(url==='/api/contests')value={ready:true,contract,rounds:[{id:'1',songId:'last-bus-home',start,deadline:start+3600000}]};
- else if(String(url).includes('/pools/')){const h=String(url).split('/').at(-1),offset={'24h':0,'48h':24,week:144}[h];value={open:true,spotCount:'0',peopleCount:'0',totalDeposits:'0',mode:null,modeSpots:0,average:null,windowStart:start+offset*3600000,windowEnd:start+(offset+24)*3600000};}
+ else if(url==='/api/contests/1'){value={round:{id:'1',start,deadline:start+3600000},snapshot:{syncStatus:'current',asOfBlock:'1',verifiedAt:new Date().toISOString(),chainAvailable:true},pools:Object.fromEntries(['24h','48h','week'].map(h=>{const offset={'24h':0,'48h':24,week:144}[h];return [h,{open:true,spotCount:'0',peopleCount:'0',totalDeposits:'0',mode:null,modeSpots:'0',average:null,averageGuess:null,windowStart:start+offset*3600000,windowEnd:start+(offset+24)*3600000}];}))};}
+ else if(url==='/api/account/entries')value={groups:[],nextCursor:null,snapshot:{syncStatus:'current',asOfBlock:'1',verifiedAt:new Date().toISOString()}};
  else if(url==='/api/purchases'&&options.method==='POST'){created++;value={id,request:JSON.parse(options.body),status:'awaiting_signature',createdAt:new Date().toISOString(),expiresAt:new Date(Date.now()+120000).toISOString(),entryIds:[],transaction:{chainId:5042002,from:wallet,to:contract,value:'20000000000000000000',gas:'900000',gasPrice:'20000000000',nonce:0,data:'0x12'}};orders=[value];}
  else if(String(url).endsWith('/signed')){signed++;value={...orders[0],status:'confirmed',entryIds:['1','2','3','4']};orders=[value];}
  else if(url==='/api/purchases/'+id)value=orders[0];

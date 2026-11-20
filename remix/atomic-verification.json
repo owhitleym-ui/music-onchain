@@ -1,0 +1,13 @@
+{
+  "compiler": "0.8.28",
+  "evmVersion": "cancun",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "viaIR": false,
+  "errors": 0,
+  "warnings": 3,
+  "executableMatchesTestedSource": true,
+  "atomicFour": true
+}

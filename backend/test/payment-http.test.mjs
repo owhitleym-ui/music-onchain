@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createServer} from 'node:http';
+import {once} from 'node:events';
+import {createHandler} from '../src/http.js';
+import {AppError} from '../src/errors.js';
+const id='10000000-0000-4000-8000-000000000001';
+test('purchase HTTP endpoints authenticate, preserve ownership, limit payloads, and keep admin actions private',async t=>{
+ const calls=[];const identity={userId:'did:privy:one',wallet:'0x'+'a'.repeat(40)};
+ const purchases={catalog:async()=>({ready:false,rounds:[]}),pool:async()=>({open:false}),list:async i=>{calls.push(i);return {orders:[]};},get:async(o,i)=>{calls.push(i);throw new AppError('ORDER_NOT_FOUND',404);},create:async(i,b,key)=>{calls.push({i,b,key});return {id,status:'awaiting_signature'};},signed:async(o,i,raw)=>{calls.push({o,i,raw});return {id,status:'prepared'};},cancel:async()=>({id,status:'cancelled'})};
+ const server=createServer(createHandler({purchases,authenticate:async token=>{if(token!=='Bearer good')throw new AppError('AUTH_REQUIRED',401);return identity;},approvalService:async()=>({status:'approved'})}));server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>server.close());const url='http://127.0.0.1:'+server.address().port;
+ const request=(path,options={})=>fetch(url+path,{...options,headers:{Authorization:'Bearer good',...options.headers}});
+ assert.equal((await fetch(url+'/api/contests')).status,200);
+ assert.equal((await fetch(url+'/api/purchases')).status,401);
+ const body={roundId:'1',horizon:'24h',guess:'100',optionId:'four'};
+ assert.equal((await request('/api/purchases',{method:'POST',headers:{'Idempotency-Key':id},body:JSON.stringify(body)})).status,200);assert.equal(calls[0].i,identity);assert.equal(calls[0].key,id);
+ assert.equal((await request('/api/purchases/'+id)).status,404);
+ assert.equal((await request('/api/purchases/'+id+'/signed',{method:'POST',body:JSON.stringify({signedTransaction:'0x12'})})).status,202);
+ assert.equal((await request('/api/purchases/'+id+'/signed',{method:'POST',body:JSON.stringify({signedTransaction:'0x12',wallet:'attacker'})})).status,400);
+ assert.equal((await request('/api/purchases',{method:'POST',headers:{Origin:'https://attacker.test'},body:'{}'})).status,403);
+ assert.equal((await request('/api/purchases',{method:'POST',body:'x'.repeat(24001)})).status,413);
+ assert.equal((await request('/api/admin/create-round',{method:'POST',body:'{}'})).status,404);
+});

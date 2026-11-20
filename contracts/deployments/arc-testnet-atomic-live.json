@@ -1,0 +1,19 @@
+{
+  "chainId": 5042002,
+  "address": "0x0e45cf9200c27af84ba175a8f6723ffd8dd8b083",
+  "atomicFour": true,
+  "creationBlock": 73100560,
+  "deploymentTransaction": "0x625c3d03e7b396ab3167b85ddc2eb75cf65cf6549befd41e1c9773e709d42430",
+  "runtimeSha256": "2df546ef4ef74033407294fe6ac0afeb0a1e3a662fe22ace4e398c964ba56c9b",
+  "compiler": "0.8.28",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200
+  },
+  "evmVersion": "cancun",
+  "viaIR": false,
+  "owner": "0x170249f9ac07d25f97bc1957b68a0011543d07ad",
+  "oracle": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "platformRecipient": "0xcd61a22acf76623114583a1e0a031c18201baf51",
+  "verifiedAt": "2026-11-20T00:20:58.622Z"
+}
