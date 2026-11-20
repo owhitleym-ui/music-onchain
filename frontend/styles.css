@@ -890,37 +890,102 @@ button.song-cover { width: 100%; border: 0; text-align: left; }
   .support-overview > .panel { flex: 0 0 84%; scroll-snap-align: start; }
 }
 
-/* ---- Navy navigation bar and per-page identity ---- */
-:root { --header-bg: #1f3561; --header-text: #ffffff; --header-muted: rgb(255 255 255 / 68%); --art-ink: #1f3561; --art-ground: #f4f1ea; }
-[data-theme="dark"] { --header-bg: #0f1626; --header-text: #eaf0fa; --header-muted: rgb(234 240 250 / 62%); --art-ink: #dfe6f3; --art-ground: #1b2333; }
-.site-header { background: var(--header-bg); border-bottom-color: transparent; color: var(--header-text); }
-.site-header .brand { color: var(--header-text); }
-.site-header .brand-mark { background: var(--header-text); color: var(--header-bg); }
-.site-header .main-nav a { color: var(--header-muted); gap: 7px; }
-.site-header .main-nav a svg { width: 16px; height: 16px; }
-.site-header .main-nav a:hover, .site-header .main-nav a.active { color: var(--header-text); }
-.site-header .main-nav a.active::after { background: var(--coral); }
-.site-header .demo-badge { color: var(--header-muted); }
-.site-header .button.primary { background: var(--header-text); border-color: var(--header-text); color: var(--header-bg); }
-.site-header .button.primary:hover { background: color-mix(in srgb, var(--header-text) 88%, var(--header-bg)); }
-.site-header .button.secondary { background: transparent; border-color: rgb(255 255 255 / 28%); color: var(--header-text); }
-.site-header .button.secondary:hover { background: rgb(255 255 255 / 10%); }
+/* ---- Blue/green palette, light navigation, rows, outcomes, motion ---- */
+:root {
+  --blue: #2456a6; --blue-hover: #1c4687; --blue-soft: #eaf1fb; --on-primary: #ffffff;
+  --teal: #0f7f74; --teal-soft: #e5f3f1;
+  --coral: var(--teal); --coral-soft: var(--teal-soft);   /* accents now stay in the blue/green family */
+  --gold: var(--teal); --gold-soft: var(--teal-soft);
+  --orange: #2f6f9f; --orange-soft: #e8f1f8;               /* "awaiting" states: calm blue, not amber */
+  --green: #1a7f55; --green-soft: #e6f4ec;
+  --header-bg: var(--surface);
+}
+[data-theme="dark"] {
+  --blue: #8db4f0; --blue-hover: #a9c6f4; --blue-soft: #1c2b44; --on-primary: #0e1626;
+  --teal: #5cc5b7; --teal-soft: #163431;
+  --orange: #8cc0e4; --orange-soft: #1b2e3f;
+  --green: #6fd3a2; --green-soft: #183527;
+}
+.button.primary { color: var(--on-primary); }
 
-/* Each page gets its own heading treatment so Discover, a song and My Purchases are easy to tell apart. */
-[data-page="discover"] .page-shell > .page-header,
-[data-page="purchases"] .page-shell > .page-header { padding: 28px 30px; border-radius: 14px; border: 1px solid var(--border); }
-[data-page="discover"] .page-shell > .page-header { background: var(--blue-soft); }
-[data-page="discover"] .page-header .eyebrow { color: var(--blue); }
-[data-page="purchases"] .page-shell > .page-header { background: var(--gold-soft); }
-[data-page="purchases"] .page-header .eyebrow { color: var(--gold); }
-[data-page="support"] .song-page-heading { padding: 18px 20px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--coral); }
+/* Navigation: same surface as the page, with a clear pill for the current section. */
+.site-header { background: var(--surface); border-bottom: 1px solid var(--border); }
+.main-nav { align-items: center; gap: 6px; }
+.main-nav a { gap: 7px; padding: 8px 14px; border-radius: 999px; color: var(--muted); }
+.main-nav a svg { width: 16px; height: 16px; }
+.main-nav a:hover { color: var(--text); background: var(--surface-subtle); }
+.main-nav a.active { color: var(--blue); background: var(--blue-soft); }
+.main-nav a.active::after { display: none; }
+
+/* Page headings: plain on the page background, identified by a small labelled icon. */
+.page-header .eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--blue); }
+.page-header .eyebrow svg { width: 14px; height: 14px; }
+.purchases-page .page-header .eyebrow { color: var(--teal); }
+.support-page .song-page-heading { padding: 0; background: none; border: 0; }
+
+/* Search and filters: the filter control reads as a button. */
+.filter-toggle { background: var(--blue-soft); border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); color: var(--blue); font-weight: 650; }
+.filter-toggle:hover, .filter-toggle.is-active { background: var(--blue); border-color: var(--blue); color: var(--on-primary); }
+.filter-count { background: var(--surface); color: var(--blue); }
+.genre-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: -6px 0 22px; }
+.chip { border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 13px; font-size: 13px; font-weight: 600; }
+.chip:hover { border-color: var(--blue); }
+.chip.selected { background: var(--blue); border-color: var(--blue); color: var(--on-primary); }
+
+/* Horizontal rows (swipe or use the arrows), with "See all" for the full grid. */
+.section-heading { align-items: flex-end; }
+.section-heading .section-note { display: block; margin-top: 2px; }
+.row-controls { display: flex; align-items: center; gap: 6px; }
+.row-arrow-button { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); }
+.row-arrow-button:hover { border-color: var(--blue); color: var(--blue); }
+.row-arrow-button svg { width: 16px; height: 16px; }
+.see-all { margin-left: 6px; font-weight: 650; color: var(--blue); }
+.back-link { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 10px; color: var(--muted); }
+.back-link svg { width: 14px; height: 14px; }
+.song-grid.song-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(214px, 232px); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 2px; padding: 2px 2px 10px; scrollbar-width: thin; }
+.song-grid.song-row > .song-card { scroll-snap-align: start; }
+.artist-row { display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); grid-auto-columns: minmax(250px, 270px); gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 2px 10px; scrollbar-width: thin; }
+.artist-tile { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 44px 12px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); scroll-snap-align: start; }
+.artist-tile:hover { border-color: color-mix(in srgb, var(--blue) 40%, var(--border)); }
+.artist-tile-avatar { position: relative; overflow: hidden; width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0; }
+.artist-tile-meta { min-width: 0; display: grid; }
+.artist-tile-name { font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-tile-name::before { content: ""; position: absolute; inset: 0; }
+.artist-tile-follow { top: 50%; transform: translateY(-50%); }
+.card-number.live-tag { background: var(--teal); color: #fff; font-weight: 650; }
 @media (max-width: 599px) {
-  [data-page="discover"] .page-shell > .page-header,
-  [data-page="purchases"] .page-shell > .page-header { padding: 20px 18px; }
+  .row-arrow-button { display: none; }
+  .song-grid.song-row { grid-auto-columns: 74%; margin: 0 -18px; padding: 2px 18px 10px; scroll-padding-inline: 18px; }
+  .artist-row { grid-auto-columns: 78%; margin: 0 -18px; padding: 2px 18px 10px; scroll-padding-inline: 18px; }
 }
 
-/* Generated artwork for fictional artists (photos for real ones). */
+/* My Purchases: colour-coded outcomes. */
+.purchase-row td:first-child { box-shadow: inset 4px 0 0 var(--outcome, transparent); }
+.purchase-row.outcome-won { --outcome: var(--green); }
+.purchase-row.outcome-lost { --outcome: var(--red); }
+.purchase-row.outcome-even { --outcome: #9aa6b8; }
+.purchase-row.outcome-pending { --outcome: var(--blue); }
+.outcome-pill { display: inline-block; margin-left: 6px; padding: 3px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.outcome-pill.outcome-won { background: var(--green-soft); color: var(--green); }
+.outcome-pill.outcome-lost { background: var(--red-soft); color: var(--red); }
+.outcome-pill.outcome-even { background: var(--surface-subtle); color: var(--muted); }
+.outcome-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 0 0 12px; font-size: 12px; color: var(--muted); }
+.outcome-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.outcome-legend span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+.outcome-legend .outcome-won { --c: var(--green); } .outcome-legend .outcome-lost { --c: var(--red); }
+.outcome-legend .outcome-even { --c: #9aa6b8; } .outcome-legend .outcome-pending { --c: var(--blue); }
+.tab-panel { min-height: 420px; }
+
+/* Settings slides in from the right; dialogs ease in. */
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes panel-in { from { transform: translateX(32px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes modal-in { from { transform: translateY(10px) scale(.985); opacity: 0; } to { transform: none; opacity: 1; } }
+.settings-backdrop { animation: backdrop-in .22s ease-out; }
+.settings-panel { animation: panel-in .28s cubic-bezier(.2, .8, .2, 1); }
+.modal-backdrop { animation: backdrop-in .18s ease-out; }
+.modal { animation: modal-in .22s cubic-bezier(.2, .8, .2, 1); }
+
+/* Generated artwork for artists: quiet, single-hue patterns. */
 .cover-art, .avatar-art { position: absolute; inset: 0; width: 100%; height: 100%; }
 .song-cover:has(.cover-art)::after, .song-cover:has(.cover-art) .cover-lines, .song-cover:has(.cover-art) .cover-mark { display: none; }
-.song-cover:has(.cover-art) .cover-caption, .song-cover.has-photo .cover-caption { position: relative; z-index: 1; padding: 3px 7px; border-radius: 5px; background: rgb(255 255 255 / 86%); color: #1f3561; text-shadow: none; }
-[data-theme="dark"] .song-cover:has(.cover-art) .cover-caption { background: rgb(15 22 38 / 80%); color: #eaf0fa; }
+.song-cover:has(.cover-art) .cover-caption { position: relative; z-index: 1; padding: 3px 7px; border-radius: 5px; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--text); }

@@ -1,9 +1,8 @@
 // Artist photos for real, public artists only. Fictional demo artists keep their initials.
 // Photos come from Wikipedia's public page summary (thumbnail), are cached per browser,
 // and fall back to initials while loading, offline, or if an image fails.
-const WIKIPEDIA_TITLES = Object.freeze({
-  'maroon-5': 'Maroon_5',
-});
+// Add 'artist-id': 'Wikipedia_Title' here to show a real artist's photo. Empty: every artist uses artwork.
+const WIKIPEDIA_TITLES = Object.freeze({});
 
 const CACHE_KEY = 'music-artist-photos-v1';
 const photos = new Map();
@@ -34,32 +33,35 @@ function seed(text) {
   return h >>> 0;
 }
 
+// Calm blue/green hues; each artist gets one hue, drawn as low-contrast tints of itself.
+const HUES = ['#2456a6', '#2f6f9f', '#1f7a8c', '#0f7f74', '#2c7a5b', '#3d6fb0', '#1d6b84'];
+
 export function artistArt(artist, className = 'art') {
   const h = seed(artist.id);
   const pick = (shift, min, max) => min + ((h >>> shift) % 1000) / 1000 * (max - min);
-  const accent = h % 2 ? 'var(--coral)' : 'var(--gold)';
-  const ink = 'var(--art-ink)';
-  const ground = `fill:color-mix(in srgb, ${artist.color} 55%, var(--art-ground))`;
+  const hue = HUES[h % HUES.length];
+  const ground = `fill:color-mix(in srgb, ${hue} 14%, var(--surface))`;
+  const tone = opacity => `stroke="${hue}" stroke-opacity="${opacity}"`;
   let shapes;
-  const style = h % 4;
-  if (style === 0) { // record: concentric rings
-    const cx = pick(3, 70, 110), cy = pick(7, 60, 100);
-    shapes = [70, 54, 38].map((r, i) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${ink}" stroke-opacity="${0.16 + i * 0.07}" stroke-width="${i === 2 ? 10 : 2}"/>`).join('')
-      + `<circle cx="${cx}" cy="${cy}" r="12" fill="${accent}"/>`;
+  const style = (h >>> 5) % 4;
+  if (style === 0) { // record rings
+    const cx = pick(3, 80, 120), cy = pick(7, 70, 100);
+    shapes = [64, 48, 32].map((r, i) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" ${tone(0.14 + i * 0.06)} stroke-width="${i === 2 ? 7 : 2}"/>`).join('')
+      + `<circle cx="${cx}" cy="${cy}" r="9" fill="${hue}" fill-opacity=".38"/>`;
   } else if (style === 1) { // equalizer bars
     shapes = Array.from({ length: 9 }, (_, i) => {
-      const height = 26 + ((h >>> (i * 3)) % 90);
-      return `<rect x="${14 + i * 15}" y="${150 - height}" width="9" height="${height}" rx="4.5" fill="${i === 4 ? accent : ink}" fill-opacity="${i === 4 ? 1 : 0.22 + (i % 3) * 0.08}"/>`;
+      const height = 24 + ((h >>> (i * 3)) % 70);
+      return `<rect x="${14 + i * 15}" y="${150 - height}" width="8" height="${height}" rx="4" fill="${hue}" fill-opacity="${0.14 + (i % 3) * 0.06}"/>`;
     }).join('');
   } else if (style === 2) { // sound waves
     shapes = [0, 1, 2, 3].map(i => {
-      const y = 46 + i * 24, a = pick(i * 4, 10, 22);
-      return `<path d="M-10 ${y} C 30 ${y - a}, 50 ${y + a}, 80 ${y} S 130 ${y - a}, 170 ${y}" fill="none" stroke="${i === 1 ? accent : ink}" stroke-opacity="${i === 1 ? 1 : 0.25}" stroke-width="${i === 1 ? 5 : 3}" stroke-linecap="round"/>`;
+      const y = 50 + i * 22, a = pick(i * 4, 8, 18);
+      return `<path d="M-10 ${y} C 30 ${y - a}, 50 ${y + a}, 80 ${y} S 130 ${y - a}, 170 ${y}" fill="none" ${tone(i === 1 ? 0.42 : 0.18)} stroke-width="${i === 1 ? 3.5 : 2.5}" stroke-linecap="round"/>`;
     }).join('');
-  } else { // overlapping circles
-    shapes = `<circle cx="${pick(2, 40, 70)}" cy="${pick(6, 50, 80)}" r="46" fill="${ink}" fill-opacity=".18"/>`
-      + `<circle cx="${pick(10, 90, 120)}" cy="${pick(14, 80, 110)}" r="40" fill="${accent}" fill-opacity=".85"/>`
-      + `<circle cx="${pick(18, 60, 100)}" cy="${pick(22, 100, 130)}" r="22" fill="none" stroke="${ink}" stroke-opacity=".35" stroke-width="3"/>`;
+  } else { // soft overlapping circles
+    shapes = `<circle cx="${pick(2, 40, 70)}" cy="${pick(6, 50, 80)}" r="44" fill="${hue}" fill-opacity=".12"/>`
+      + `<circle cx="${pick(10, 90, 120)}" cy="${pick(14, 80, 110)}" r="36" fill="${hue}" fill-opacity=".2"/>`
+      + `<circle cx="${pick(18, 60, 100)}" cy="${pick(22, 100, 130)}" r="20" fill="none" ${tone(0.3)} stroke-width="2.5"/>`;
   }
   return `<svg class="${className}" viewBox="0 0 160 160" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="160" height="160" style="${ground}"/>${shapes}</svg>`;
 }
