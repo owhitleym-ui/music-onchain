@@ -5,6 +5,7 @@ import { HOUR, HORIZONS, artists, songs, currentRoundStart, getHistory } from '.
 import { createInitialState, loadState, saveState, toggleFollow, setTheme, PURCHASES_PAUSED, getRoundSummary, getPortfolio, getPurchaseStatus } from './store.js';
 import { icon } from './icons.js';
 import { artistAvatar, artistArt, artistPhoto, loadArtistPhotos } from './artist-media.js';
+import { PHOTO_CREDITS, FEATURE_IMAGE } from './artist-images.js';
 import { renderChart, renderRewardCurve } from './chart.js';
 import { account } from './account.js';
 import { formatDollars, formatAccountDollars } from './money.js';
@@ -15,7 +16,7 @@ const ui = {
   search: '', genre: 'all', followedOnly: false, filtersOpen: false,
   historyDays: 3, amount: SPOT_PRICE_CENTS, guess: '', formError: '',
   lastSong: 'animals', lastContext: '', modal: null, settingsOpen: false,
-  purchaseSort: 'newest', followSort: 'recent', lastView: '', expandedSection: '',
+  purchaseSort: 'newest', followSort: 'recent', lastView: '', expandedSection: '', outcomeFilter: 'all',
 };
 const app = document.querySelector('#app');
 const modalRoot = document.querySelector('#modal-root');
@@ -79,10 +80,10 @@ function followButton(artist, className = 'button secondary small', showText = t
 
 function renderHeader(page) {
   return `<header class="site-header"><div class="header-inner">
-    <a class="brand" href="#discover" aria-label="Music predictions home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Music predictions</a>
+    <a class="brand" href="#discover" aria-label="AmpRamp home"><img class="brand-logo brand-logo-light" src="/brand/ampramp-logo.svg" alt="AmpRamp" width="184" height="32" /><img class="brand-logo brand-logo-dark" src="/brand/ampramp-logo-dark.svg" alt="AmpRamp" width="184" height="32" /><img class="brand-mark-img brand-logo-light" src="/brand/ampramp-mark.svg" alt="AmpRamp" width="28" height="28" /><img class="brand-mark-img brand-logo-dark" src="/brand/ampramp-mark-dark.svg" alt="AmpRamp" width="28" height="28" /></a>
     <nav class="main-nav" aria-label="Main navigation">
       <a href="#discover" class="${page !== 'purchases' ? 'active' : ''}" ${page === 'discover' ? 'aria-current="page"' : ''}>${icon('compass')}Discover</a>
-      <a href="#purchases" class="${page === 'purchases' ? 'active' : ''}" ${page === 'purchases' ? 'aria-current="page"' : ''}>${icon('receipt')}My Purchases</a>
+      <a href="#purchases?tab=subscribed" class="${page === 'purchases' ? 'active' : ''}" ${page === 'purchases' ? 'aria-current="page"' : ''}>${icon('receipt')}My Purchases</a>
     </nav>
     <div class="header-actions"><span class="demo-badge">Demo — no real money</span>
       <span id="header-account">${accountHeaderContent()}</span>
@@ -236,8 +237,7 @@ function discoverSections() {
   return [
     { id: 'for-you', title: 'Recommended for you', note: followedNames.length ? `Based on ${followedNames.slice(0, 2).join(' and ')}${followedNames.length > 2 ? ' and more' : ''}` : 'Based on momentum across the catalogue', songs: recommendedSongs() },
     { id: 'trending', title: 'Trending now', note: 'Most watched today', songs: [...songs].sort((a, b) => b.dailyViews - a.dailyViews) },
-    { id: 'rising', title: 'Rising fast', note: 'Biggest growth this week', songs: [...songs].sort((a, b) => b.growth - a.growth) },
-    { id: 'early', title: 'Find them early', note: 'Under 12,000 daily views', songs: songs.filter(song => song.dailyViews < 12000).sort((a, b) => b.growth - a.growth) },
+    { id: 'rising', title: 'Rising early', note: 'Fastest growth this week, smaller artists first', songs: [...songs].sort((a, b) => (a.dailyViews < 12000 ? 0 : 1) - (b.dailyViews < 12000 ? 0 : 1) || b.growth - a.growth) },
   ];
 }
 
@@ -272,7 +272,35 @@ function discoverResults() {
     return `<section class="song-section"><button class="text-button back-link" data-action="see-all" data-section="">${icon('back')} All sections</button><div class="section-heading"><div><h2 class="section-title">${expanded.title}</h2><span class="section-note">${esc(expanded.note)}</span></div></div><div class="song-grid">${expanded.songs.map(songCard).join('')}</div></section>`;
   }
   const [forYou, ...rest] = discoverSections();
-  return songRow(forYou) + artistsRow() + rest.map(songRow).join('');
+  return featureBanner() + songRow(forYou) + artistsRow() + rest.map(songRow).join('');
+}
+
+// Decorative, interactive soundwave: each cluster of bars is one song, shaped by its recent views.
+// Hover a cluster to see the song; click it to open the song.
+function soundwave() {
+  const now = currentRoundStart();
+  const groups = songs.map((song, index) => {
+    const history = getHistory(song.id, now, 3).slice(-5);
+    const max = Math.max(...history.map(point => point.views), 1);
+    const bars = history.map((point, bar) => {
+      const height = 22 + (point.views / max) * 58 * (0.55 + (song.growth / 100));
+      return `<rect class="wave-bar" style="--i:${index * 5 + bar}" x="${index * 34 + bar * 6}" y="${100 - Math.min(96, height)}" width="4" height="${Math.min(96, height)}" rx="2"/>`;
+    }).join('');
+    return `<g class="wave-group" data-action="open-song" data-song="${song.id}" data-label="${esc(song.title)} · ${esc(artistFor(song).name)} · ${number(song.dailyViews)} views/day" tabindex="-1">${bars}<rect class="wave-hit" x="${index * 34 - 3}" y="0" width="34" height="100" fill="transparent"/></g>`;
+  }).join('');
+  return `<figure class="soundwave" aria-label="Songs in the catalogue, shown as a soundwave"><svg viewBox="-4 0 ${songs.length * 34} 100" preserveAspectRatio="none" role="img" aria-hidden="true">${groups}</svg><figcaption class="wave-label" aria-live="polite">Hover the wave to find a song</figcaption></figure>`;
+}
+
+function photoCredit(id) {
+  const credit = PHOTO_CREDITS[id];
+  return credit ? `<p class="photo-credit">Photo by <a href="${credit.profile}" target="_blank" rel="noopener noreferrer">${esc(credit.photographer)}</a> on <a href="${credit.source}" target="_blank" rel="noopener noreferrer">Unsplash</a></p>` : '';
+}
+
+function featureBanner() {
+  const song = songs.find(isLive);
+  if (!song || !FEATURE_IMAGE) return '';
+  const artist = artistFor(song);
+  return `<section class="feature-banner" style="--feature-image:url('${FEATURE_IMAGE}')"><div class="feature-copy"><span class="feature-tag"><span class="live-dot" aria-hidden="true"></span>Live test contest</span><h2>${esc(song.title)}</h2><p>${esc(artist.name)} · ${esc(artist.genre)} · ${number(song.dailyViews)} daily views</p><a class="button primary" href="${songLink(song.id)}">Make a prediction ${icon('arrow')}</a></div>${photoCredit('__feature')}</section>`;
 }
 
 function genreChips(genres) {
@@ -282,11 +310,15 @@ function genreChips(genres) {
 function renderDiscover() {
   const filterCount = Number(ui.genre !== 'all') + Number(ui.followedOnly);
   const genres = [...new Set(artists.map(artist => artist.genre))].sort();
-  return `<main class="page-shell"><div class="page-header"><div><p class="eyebrow">${icon('compass')}Discover</p><h1 class="page-title">Spot the next big moment.</h1><p class="page-description">Choose a song. Predict its video views. Support the artist.</p></div><span class="sample-data-label">Sample songs &amp; statistics</span></div>
+  const today = songs.filter(song => !isLive(song)).map(song => getRoundSummary(state, song.id, currentRoundStart(), '24h'));
+  const pooled = today.reduce((sum, item) => sum + item.totalEnteredCents, 0);
+  const predictors = today.reduce((sum, item) => sum + item.peopleCount, 0);
+  return `<main class="page-shell"><section class="hero"><div class="hero-copy"><p class="eyebrow">${icon('compass')}Discover</p><h1 class="page-title hero-title">Spot the next big moment.</h1><p class="page-description">Choose a song. Predict its video views. Support the artist.</p></div>${soundwave()}</section>
+    <dl class="hero-stats" aria-label="Sample activity this round"><div><span class="stat-icon">${icon('wallet')}</span><dt><span class="live-dot" aria-hidden="true"></span>In this round's pools</dt><dd>${money(pooled)}</dd></div><div><span class="stat-icon">${icon('user')}</span><dt>Predictions this round</dt><dd>${number(predictors)}</dd></div><div><span class="stat-icon">${icon('music')}</span><dt>Songs open</dt><dd>${songs.length}</dd></div></dl><p class="hero-note">Sample statistics</p>
     <div class="discover-tools"><label class="search-field">${icon('search')}<span class="sr-only">Search songs or artists</span><input id="song-search" type="search" placeholder="Search a song or artist" value="${esc(ui.search)}" autocomplete="off" /></label><button class="button filter-toggle ${ui.filtersOpen || filterCount ? 'is-active' : ''}" data-action="filters" aria-expanded="${ui.filtersOpen}" aria-controls="filter-panel">${icon('filter')}Filters${filterCount ? `<span class="filter-count">${filterCount}</span>` : ''}</button></div>
     ${genreChips(genres)}
     <div id="filter-panel" class="filter-panel ${ui.filtersOpen ? 'visible' : ''}"><label class="field-label">Genre<select class="select-input" id="genre-filter"><option value="all">All genres</option>${genres.map(genre => `<option ${genre === ui.genre ? 'selected' : ''}>${esc(genre)}</option>`).join('')}</select></label><label class="checkbox-label"><input id="followed-filter" type="checkbox" ${ui.followedOnly ? 'checked' : ''}/> Only artists I follow</label><button class="text-button" data-action="clear-filters">Reset filters</button></div>
-    <div class="discover-results">${discoverResults()}</div><p class="fine-print page-footnote">Browse sample songs, view counts, and contest results. Sign up with your email whenever you’re ready.</p></main>`;
+    <div class="discover-results">${discoverResults()}</div><p class="fine-print page-footnote">Browse sample songs, view counts, and contest results. Sign up with your email whenever you’re ready. Artists are fictional; photos are stock images from <a href="https://unsplash.com/?utm_source=music_onchain_demo&amp;utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a> used for this demo.</p></main>`;
 }
 
 function renderSupport(context) {
@@ -315,7 +347,7 @@ function renderSupport(context) {
     <div class="song-page-heading"><div class="song-heading-meta">${artistAvatar(artist, 'song-avatar')}<div><p class="eyebrow">${liveRound?'Test contest · Simulated music statistics':'TikTok · BGM video views <span class="sample-inline">/ Sample data</span>'}</p><h1 class="page-title">${esc(song.title)}</h1><p class="song-artist">${esc(artist.name)} <span class="genre-tag">${esc(artist.genre)}</span></p></div></div><button class="button secondary small" data-action="rules">${icon('info')} How rewards work</button></div>
     ${liveRound?`<div class="live-round-toolbar"><label class="field-label" for="live-round-select">Test round<select class="select-input" id="live-round-select">${paymentState.catalog.rounds.map(r=>`<option value="${esc(r.id)}" ${r.id===liveRound.id?'selected':''}>${dateTime(r.start)} CT · ${r.entryStatus??'test round'}</option>`).join('')}</select></label><p class="live-freshness" role="status">${esc(freshness(snapshot,paymentState.catalogError))}</p></div>`:''}
     <div class="support-overview">
-      <section class="panel"><div class="artist-summary">${artistAvatar(artist, 'artist-avatar')}<div><span class="field-label">You’re supporting</span><h2 class="artist-heading">${esc(artist.name)}</h2></div></div>${followButton(artist, 'button secondary full-width')}<details class="artist-details"><summary>About the artist ${icon('down')}</summary><p class="artist-bio">${esc(artist.bio)}</p><p class="fine-print">The artist receives 2% of profit won in their contests.</p></details></section>
+      <section class="panel"><div class="artist-summary">${artistAvatar(artist, 'artist-avatar')}<div><span class="field-label">You’re supporting</span><h2 class="artist-heading">${esc(artist.name)}</h2></div></div>${followButton(artist, 'button secondary full-width')}<details class="artist-details"><summary>About the artist ${icon('down')}</summary><p class="artist-bio">${esc(artist.bio)}</p><p class="fine-print">The artist receives 2% of profit won in their contests.</p></details>${photoCredit(artist.id)}</section>
       <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}"></strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${liveSong?(summary.totalDeposits==null?'—':nativeDollars(summary.totalDeposits)):money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
       <section class="panel popular-panel"><h2 class="panel-title">Most popular guesses</h2><p class="fine-print">Most common value, counted by spots</p><table class="popular-table"><thead><tr><th scope="col">Window</th><th scope="col">Views</th><th scope="col">Spots</th></tr></thead><tbody>${HORIZONS.map(item => `<tr class="popular-row ${item.id === horizon ? 'selected' : ''}"><td><button class="text-button" data-action="select-horizon" data-horizon="${item.id}">${item.label}</button></td><td>${summaries[item.id].mode==null?'—':number(BigInt(summaries[item.id].mode))}</td><td>${liveCount(summaries[item.id].modeSpots)}</td></tr>`).join('')}</tbody></table><p class="fine-print">The chart shows the average. Tied popular guesses use the lower value.</p></section>
     </div>
@@ -404,6 +436,23 @@ function sortedFollowed(list) {
   return [...list].sort((a, b) => state.follows.indexOf(b.id) - state.follows.indexOf(a.id));
 }
 
+const outcomeOf = purchase => {
+  if (!purchase.result) return 'pending';
+  const profit = purchase.result.returnedCents - purchase.costCents;
+  return profit > 0 ? 'won' : profit < 0 ? 'lost' : 'even';
+};
+
+function visiblePurchases() {
+  const list = sortedPurchases(state.purchases);
+  return ui.outcomeFilter === 'all' ? list : list.filter(purchase => outcomeOf(purchase) === ui.outcomeFilter);
+}
+
+function outcomeFilters() {
+  const options = [['all', 'All'], ['won', 'Won'], ['lost', 'Lost'], ['even', 'Even'], ['pending', 'Awaiting']];
+  const count = key => key === 'all' ? state.purchases.length : state.purchases.filter(purchase => outcomeOf(purchase) === key).length;
+  return `<div class="outcome-filters" role="group" aria-label="Show purchases by result">${options.map(([key, label]) => `<button class="chip outcome-chip chip-${key} ${ui.outcomeFilter === key ? 'selected' : ''}" data-action="outcome-filter" data-outcome="${key}" aria-pressed="${ui.outcomeFilter === key}">${label}<span>${count(key)}</span></button>`).join('')}</div>`;
+}
+
 function renderPurchases(context) {
   const portfolio = getPortfolio(state);
   const followed = artists.filter(artist => state.follows.includes(artist.id));
@@ -412,11 +461,14 @@ function renderPurchases(context) {
   if (context.tab === 'subscribed') {
     content = followed.length ? `<div class="followed-grid">${sortedFollowed(followed).map(artist => `<article class="followed-card"><div class="artist-summary">${artistAvatar(artist, 'artist-avatar')}<div><h2 class="artist-heading">${esc(artist.name)}</h2><span class="genre-tag">${esc(artist.genre)}</span></div></div><p class="artist-bio">${esc(artist.bio)}</p><div class="followed-songs">${songs.filter(song => song.artistId === artist.id).map(song => `<a href="${songLink(song.id)}">${esc(song.title)} ${icon('arrow')}</a>`).join('')}</div>${followButton(artist, 'button secondary small')}</article>`).join('')}</div>` : emptyState('Find your people', 'Follow an artist to keep their songs here.', '<a class="button primary" href="#discover">Discover artists</a>');
   } else {
-    content = state.purchases.length ? `<div class="table-container"><table class="purchase-table"><thead><tr><th scope="col">Song / artist</th><th scope="col">Window / purchased</th><th scope="col">Your guess</th><th scope="col">Entry</th><th scope="col">Rank</th><th scope="col">Status</th><th scope="col">Net profit</th><th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody>${sortedPurchases(state.purchases).map(purchaseRow).join('')}</tbody></table></div>` : emptyState('No sample purchases', 'Browse songs and charts while purchases are unavailable in this preview.', '<a class="button primary" href="#discover">Explore songs</a>');
+    content = state.purchases.length ? `<div class="table-container"><table class="purchase-table"><thead><tr><th scope="col">Song / artist</th><th scope="col">Window / purchased</th><th scope="col">Your guess</th><th scope="col">Entry</th><th scope="col">Rank</th><th scope="col">Status</th><th scope="col">Net profit</th><th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody>${visiblePurchases().map(purchaseRow).join('') || `<tr><td colspan="8" class="table-empty">No ${ui.outcomeFilter === 'pending' ? 'purchases awaiting a result' : `${ui.outcomeFilter} purchases`} yet.</td></tr>`}</tbody></table></div>` : emptyState('No sample purchases', 'Browse songs and charts while purchases are unavailable in this preview.', '<a class="button primary" href="#discover">Explore songs</a>');
   }
-  const tabs = `<div class="purchase-toolbar"><div class="tabs" aria-label="Purchase views"><a href="#purchases" class="${context.tab === 'all' ? 'active' : ''}">All Purchases <span>${state.purchases.length}</span></a><a href="#purchases?tab=subscribed" class="${context.tab === 'subscribed' ? 'active' : ''}">Subscribed <span>${followed.length}</span></a></div><div class="toolbar-end">${context.tab === 'all' ? `<span class="section-note">${pending} pending · ${state.purchases.length - pending} completed</span>${state.purchases.length > 1 ? sortControl('purchase-sort', PURCHASE_SORTS, ui.purchaseSort) : ''}` : `<span class="section-note">Following is free</span>${followed.length > 1 ? sortControl('follow-sort', FOLLOW_SORTS, ui.followSort) : ''}`}</div></div>`;
-  const body = context.tab === 'subscribed' ? content : `${accountPurchaseMarkup(account.getState(),payments.getState())}<h2 class="panel-title">Sample purchase history</h2><p class="sample-history-notice">These are sample records stored in this browser. They are not purchases made by your signed-in account and do not affect your account balance.</p><div class="portfolio-stats"><section class="portfolio-stat"><span class="field-label">Artists supported</span><strong class="portfolio-value">${portfolio.supportedArtists}<span>artists</span></strong><p class="fine-print">Across all your prediction purchases</p></section><section class="portfolio-stat"><span class="field-label">Net profit</span><strong class="portfolio-value ${profitClass(portfolio.netProfitCents)}">${signedMoney(portfolio.netProfitCents)}</strong><p class="fine-print">Money returned minus completed purchase costs</p></section></div><div class="outcome-legend" aria-hidden="true"><span class="outcome-won">Won</span><span class="outcome-lost">Lost</span><span class="outcome-even">Even</span><span class="outcome-pending">Awaiting result</span></div>${content}<p class="fine-print page-footnote">These historical samples illustrate contest results and fees. Account purchases appear separately above.</p>`;
-  return `<main class="page-shell purchases-page"><div class="page-header"><div><p class="eyebrow">${icon('receipt')}My Purchases</p><h1 class="page-title">Your predictions</h1><p class="page-description">Keep track of the artists you support and how your predictions perform.</p></div><span class="sample-data-label">Account &amp; sample records</span></div>
+  const tabs = `<div class="purchase-toolbar"><div class="tabs" aria-label="Purchase views"><a href="#purchases?tab=subscribed" class="${context.tab === 'subscribed' ? 'active' : ''}">Subscribed <span>${followed.length}</span></a><a href="#purchases" class="${context.tab === 'all' ? 'active' : ''}">All Purchases <span>${state.purchases.length}</span></a></div><div class="toolbar-end">${context.tab === 'all' ? `<span class="section-note">${pending} pending · ${state.purchases.length - pending} completed</span>${state.purchases.length > 1 ? sortControl('purchase-sort', PURCHASE_SORTS, ui.purchaseSort) : ''}` : `<span class="section-note">Following is free</span>${followed.length > 1 ? sortControl('follow-sort', FOLLOW_SORTS, ui.followSort) : ''}`}</div></div>`;
+  const samples = state.purchases.length ? `<section class="sample-section"><div class="sample-heading"><div><h2 class="section-title">Sample history <span class="sample-tag">Demo data</span></h2><p class="section-note sample-history-notice">These are sample records stored in this browser. They are not purchases made by your signed-in account and do not affect your account balance.</p></div>
+      <div class="sample-summary"><span><strong>${portfolio.supportedArtists}</strong> artists supported</span><span><strong class="${profitClass(portfolio.netProfitCents)}">${signedMoney(portfolio.netProfitCents)}</strong> net</span></div></div>
+      ${outcomeFilters()}${content}</section>` : content;
+  const body = context.tab === 'subscribed' ? content : `${accountPurchaseMarkup(account.getState(),payments.getState())}${samples}`;
+  return `<main class="page-shell purchases-page"><div class="page-header"><div><p class="eyebrow">${icon('receipt')}My Purchases</p><h1 class="page-title hero-title">Your predictions</h1><p class="page-description">Keep track of the artists you support and how your predictions perform.</p></div><span class="sample-data-label">Account &amp; sample records</span></div>
     ${tabs}<div class="tab-panel">${body}</div></main>`;
 }
 
@@ -443,7 +495,7 @@ function render(background = false) {
   const chosenRound=context.page==='support'&&context.song.id==='last-bus-home'?context.liveRoundId:payments.currentRound()?.id??null;
   payments.selectRound(chosenRound);
   app.inert = ui.settingsOpen || Boolean(ui.modal);
-  document.title = `${context.page === 'support' ? context.song.title : context.page === 'purchases' ? 'My Purchases' : 'Discover'} · Music predictions`;
+  document.title = `${context.page === 'support' ? context.song.title : context.page === 'purchases' ? 'My Purchases' : 'Discover'} · AmpRamp`;
 }
 
 function detailRows(rows) {
@@ -600,6 +652,8 @@ document.addEventListener('click', event => {
     openModal({ type: 'reset' });
   } else if (action === 'confirm-reset') {
     state = createInitialState(); saveState(state); ui.guess = ''; ui.formError = ''; ui.search = ''; ui.genre = 'all'; ui.followedOnly = false; ui.filtersOpen = false; closeModal(); render(); toast('Sample data and appearance reset.');
+  } else if (action === 'outcome-filter') {
+    ui.outcomeFilter = target.dataset.outcome; keepScroll(render);
   } else if (action === 'row-scroll') {
     const track = document.querySelector(`[data-row-track="${target.dataset.row}"]`);
     track?.scrollBy({ left: Number(target.dataset.dir) * track.clientWidth * 0.85, behavior: 'smooth' });
@@ -650,6 +704,12 @@ document.addEventListener('click', event => {
   }
 });
 
+document.addEventListener('pointerover', event => {
+  const group = event.target.closest?.('.wave-group');
+  const label = document.querySelector('.wave-label');
+  if (group && label) label.textContent = group.dataset.label;
+});
+
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape') {
     if (ui.modal) closeModal();
@@ -676,7 +736,10 @@ window.addEventListener('hashchange', () => {
   closeSettings(false); closeModal();
   const next = viewKey();
   if (next === ui.lastView) { keepScroll(render); return; }
-  ui.lastView = next; render(); window.scrollTo({ top: 0 });
+  ui.lastView = next;
+  const swap = () => { render(); window.scrollTo({ top: 0 }); };
+  if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(swap);
+  else swap();
 });
 window.addEventListener('storage', event => {
   if (event.key === 'music-prediction-demo-v1') { state = loadState(); render(); if (ui.modal?.type === 'confirm') renderModal(); }

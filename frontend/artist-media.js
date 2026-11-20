@@ -1,3 +1,6 @@
+// Licensed photos bundled with the app (see public/artists/CREDITS.md); see artist-images.js.
+import { ARTIST_IMAGES } from './artist-images.js';
+
 // Artist photos for real, public artists only. Fictional demo artists keep their initials.
 // Photos come from Wikipedia's public page summary (thumbnail), are cached per browser,
 // and fall back to initials while loading, offline, or if an image fails.
@@ -22,7 +25,8 @@ function writeCache() {
 }
 
 export function artistPhoto(artistId) {
-  return failed.has(artistId) ? null : photos.get(artistId) ?? null;
+  if (failed.has(artistId)) return null;
+  return ARTIST_IMAGES[artistId] ?? photos.get(artistId) ?? null;
 }
 
 // Royalty-free artwork for fictional artists: a deterministic pattern drawn here (nothing licensed or

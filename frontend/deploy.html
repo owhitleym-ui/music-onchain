@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deploy test contract · Music predictions</title>
+    <title>Deploy test contract · AmpRamp</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./deploy.css" />
     <script type="module" src="./deploy.js"></script>
@@ -11,7 +11,7 @@
   <body class="deployment-page">
     <main class="deployment-shell">
       <a class="text-button" href="./">Back to the app</a>
-      <div class="deployment-heading"><span class="deployment-network">Arc Testnet · test tokens</span><h1>Deploy your contest.</h1><p>Publish the tested music prediction contract. MetaMask will ask you to approve the network fee.</p></div>
+      <div class="deployment-heading"><span class="deployment-network">Arc Testnet · test tokens</span><h1>Deploy your contest.</h1><p>Publish the tested AmpRamp contest contract. MetaMask will ask you to approve the network fee.</p></div>
       <section class="deployment-card" aria-labelledby="wallet-title"><h2 id="wallet-title">1. Connect your wallet</h2><div id="wallet-summary" aria-live="polite">Checking MetaMask…</div><div class="deployment-actions"><button class="button primary" id="connect">Connect MetaMask</button><button class="button secondary" id="switch" hidden>Switch to Arc Testnet</button></div><p id="wallet-error" class="deployment-error" role="alert"></p><p class="deployment-hint">Use the browser where MetaMask is installed. <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">Get MetaMask</a>.</p></section>
       <section class="deployment-card" aria-labelledby="roles-title"><h2 id="roles-title">2. Choose the contract accounts</h2><p>For this test, you can use your connected wallet for all three roles.</p><button class="text-button" id="use-wallet">Use my connected wallet for all roles</button><form id="deployment-form">
         <label for="owner">Administrator<input id="owner" name="owner" autocomplete="off" spellcheck="false" placeholder="Connect MetaMask first" required /><span>Approves wallets, creates contests, and manages the reserve.</span></label>

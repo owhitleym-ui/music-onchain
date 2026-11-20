@@ -1,6 +1,6 @@
 # Design handoff
 
-This is Tianjian's original music-prediction consumer frontend, published as a
+This is Tianjian's original AmpRamp consumer frontend, published as a
 reviewable snapshot on `frontend-design`. It is separate from `apps/web/`.
 The source and tests come from the working local project; the server, server
 credentials and wallet private keys are not included.

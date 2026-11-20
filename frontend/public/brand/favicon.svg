@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="AmpRamp">
+<title>AmpRamp</title>
+<rect width="512" height="512" rx="115" fill="#EAF1FB"/>
+<polygon fill="#2456A6" points="118.37,380.52 151.14,380.52 151.14,347.75"/>
+<polygon fill="#2456A6" points="164.25,380.52 197.02,380.52 197.02,301.88 164.25,334.64"/>
+<polygon fill="#2456A6" points="210.12,380.52 242.89,380.52 242.89,256 210.12,288.77"/>
+<polygon fill="#2456A6" points="256,380.52 288.77,380.52 288.77,210.12 256,242.89"/>
+<polygon fill="#2456A6" points="301.88,380.52 334.64,380.52 334.64,164.25 301.88,197.02"/>
+<polygon fill="#0F7F74" points="387.07,118.37 319.9,129.84 375.6,185.55"/>
+</svg>

@@ -1,6 +1,6 @@
 # Agreed seven-step roadmap
 
-Agreed November 19, 2026. This is the sequence we will follow for our original music-prediction app.
+Agreed November 19, 2026. This is the sequence we will follow for AmpRamp, our original music-prediction app.
 
 ## Working process
 
