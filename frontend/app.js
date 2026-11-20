@@ -4,7 +4,7 @@ import {liveCount,liveAverage,freshness} from './live-format.js';
 import { HOUR, HORIZONS, artists, songs, currentRoundStart, getHistory } from './data.js';
 import { createInitialState, loadState, saveState, toggleFollow, setTheme, PURCHASES_PAUSED, getRoundSummary, getPortfolio, getPurchaseStatus } from './store.js';
 import { icon } from './icons.js';
-import { artistAvatar, artistPhoto, loadArtistPhotos } from './artist-media.js';
+import { artistAvatar, artistArt, artistPhoto, loadArtistPhotos } from './artist-media.js';
 import { renderChart, renderRewardCurve } from './chart.js';
 import { account } from './account.js';
 import { formatDollars, formatAccountDollars } from './money.js';
@@ -81,9 +81,8 @@ function renderHeader(page) {
   return `<header class="site-header"><div class="header-inner">
     <a class="brand" href="#discover" aria-label="Music predictions home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>Music predictions</a>
     <nav class="main-nav" aria-label="Main navigation">
-      <a href="#discover" class="${page === 'discover' ? 'active' : ''}" ${page === 'discover' ? 'aria-current="page"' : ''}>Discover</a>
-      <a href="${songLink(ui.lastSong)}" class="${page === 'support' ? 'active' : ''}" ${page === 'support' ? 'aria-current="page"' : ''}>Support Artist</a>
-      <a href="#purchases" class="${page === 'purchases' ? 'active' : ''}" ${page === 'purchases' ? 'aria-current="page"' : ''}>My Purchases</a>
+      <a href="#discover" class="${page !== 'purchases' ? 'active' : ''}" ${page === 'discover' ? 'aria-current="page"' : ''}>${icon('compass')}Discover</a>
+      <a href="#purchases" class="${page === 'purchases' ? 'active' : ''}" ${page === 'purchases' ? 'aria-current="page"' : ''}>${icon('receipt')}My Purchases</a>
     </nav>
     <div class="header-actions"><span class="demo-badge">Demo — no real money</span>
       <span id="header-account">${accountHeaderContent()}</span>
@@ -187,7 +186,7 @@ function closeSettings(restoreFocus = true) {
 function cover(song, small = false) {
   const artist = artistFor(song);
   const photo = artistPhoto(artist.id);
-  return `<div class="song-cover ${small ? 'small-cover' : ''} ${photo ? 'has-photo' : ''}" style="--cover-color:${artist.color}" aria-hidden="true">${photo ? `<img class="cover-photo" src="${photo}" alt="" loading="lazy" referrerpolicy="no-referrer" data-artist-photo="${artist.id}" />` : ''}<span class="cover-mark">${esc(artist.initials)}</span><span class="cover-lines"><i></i><i></i><i></i><i></i><i></i></span>${small ? '' : `<span class="cover-caption">${esc(song.title)}</span>`}</div>`;
+  return `<div class="song-cover ${small ? 'small-cover' : ''} ${photo ? 'has-photo' : ''}" style="--cover-color:${artist.color}" aria-hidden="true">${photo ? `<img class="cover-photo" src="${photo}" alt="" loading="lazy" referrerpolicy="no-referrer" data-artist-photo="${artist.id}" />` : artistArt(artist, 'cover-art')}<span class="cover-mark">${esc(artist.initials)}</span><span class="cover-lines"><i></i><i></i><i></i><i></i><i></i></span>${small ? '' : `<span class="cover-caption">${esc(song.title)}</span>`}</div>`;
 }
 
 function songCard(song, index) {
@@ -261,12 +260,12 @@ function renderSupport(context) {
   const entryMessage=liveRound?(paymentState.catalogError||snapshot?.syncStatus==='unavailable'?'Live details cannot refresh right now. Your saved purchases are unchanged.':!livePool?'Checking this round…':open?'Test entries use your demo account balance. Network fees are additional.':now<roundStart?'This test round has not opened yet.':'Entries are closed for this test round.'):PURCHASES_PAUSED;
   const selected = horizonFor(horizon);
   return `<main class="page-shell support-page">
-    <a class="breadcrumb" href="#discover">${icon('back')} All songs</a>
+    <a class="breadcrumb" href="#discover">${icon('back')} Discover</a>
     <div class="song-page-heading"><div class="song-heading-meta">${artistAvatar(artist, 'song-avatar')}<div><p class="eyebrow">${liveRound?'Test contest · Simulated music statistics':'TikTok · BGM video views <span class="sample-inline">/ Sample data</span>'}</p><h1 class="page-title">${esc(song.title)}</h1><p class="song-artist">${esc(artist.name)} <span class="genre-tag">${esc(artist.genre)}</span></p></div></div><button class="button secondary small" data-action="rules">${icon('info')} How rewards work</button></div>
     ${liveRound?`<div class="live-round-toolbar"><label class="field-label" for="live-round-select">Test round<select class="select-input" id="live-round-select">${paymentState.catalog.rounds.map(r=>`<option value="${esc(r.id)}" ${r.id===liveRound.id?'selected':''}>${dateTime(r.start)} CT · ${r.entryStatus??'test round'}</option>`).join('')}</select></label><p class="live-freshness" role="status">${esc(freshness(snapshot,paymentState.catalogError))}</p></div>`:''}
     <div class="support-overview">
       <section class="panel"><div class="artist-summary">${artistAvatar(artist, 'artist-avatar')}<div><span class="field-label">You’re supporting</span><h2 class="artist-heading">${esc(artist.name)}</h2></div></div>${followButton(artist, 'button secondary full-width')}<details class="artist-details"><summary>About the artist ${icon('down')}</summary><p class="artist-bio">${esc(artist.bio)}</p><p class="fine-print">The artist receives 2% of profit won in their contests.</p></details></section>
-      <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}">${countdown(roundStart + HOUR)}</strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${liveSong?(summary.totalDeposits==null?'—':nativeDollars(summary.totalDeposits)):money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
+      <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}"></strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${liveSong?(summary.totalDeposits==null?'—':nativeDollars(summary.totalDeposits)):money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
       <section class="panel popular-panel"><h2 class="panel-title">Most popular guesses</h2><p class="fine-print">Most common value, counted by spots</p><table class="popular-table"><thead><tr><th scope="col">Window</th><th scope="col">Views</th><th scope="col">Spots</th></tr></thead><tbody>${HORIZONS.map(item => `<tr class="popular-row ${item.id === horizon ? 'selected' : ''}"><td><button class="text-button" data-action="select-horizon" data-horizon="${item.id}">${item.label}</button></td><td>${summaries[item.id].mode==null?'—':number(BigInt(summaries[item.id].mode))}</td><td>${liveCount(summaries[item.id].modeSpots)}</td></tr>`).join('')}</tbody></table><p class="fine-print">The chart shows the average. Tied popular guesses use the lower value.</p></section>
     </div>
     <div class="support-layout"><div class="support-main">
@@ -369,7 +368,12 @@ function renderPurchases(context) {
     <p class="fine-print page-footnote">These historical samples illustrate contest results and fees. Account purchases appear separately above.</p></main>`;
 }
 
-function render() {
+let lastHtml = '';
+function tickCountdowns() {
+  document.querySelectorAll('[data-countdown]').forEach(element => { element.textContent = countdown(Number(element.dataset.countdown)); });
+}
+
+function render(background = false) {
   const context = route();
   if (context.page === 'support') {
     ui.lastSong = context.song.id;
@@ -377,7 +381,13 @@ function render() {
     if (key !== ui.lastContext) { ui.guess = ''; ui.formError = ''; ui.lastContext = key; }
   }
   document.documentElement.dataset.theme = state.theme;
-  app.innerHTML = renderHeader(context.page) + (context.page === 'support' ? renderSupport(context) : context.page === 'purchases' ? renderPurchases(context) : renderDiscover());
+  document.documentElement.dataset.page = context.page;
+  const html = renderHeader(context.page) + (context.page === 'support' ? renderSupport(context) : context.page === 'purchases' ? renderPurchases(context) : renderDiscover());
+  // Background refreshes (render(true)) run every second; replacing identical markup made the page
+  // flicker, closed open menus and moved the scroll position, so they skip the swap when nothing changed.
+  if (!background || html !== lastHtml) app.innerHTML = html;
+  lastHtml = html;
+  tickCountdowns();
   const chosenRound=context.page==='support'&&context.song.id==='last-bus-home'?context.liveRoundId:payments.currentRound()?.id??null;
   payments.selectRound(chosenRound);
   app.inert = ui.settingsOpen || Boolean(ui.modal);
@@ -449,7 +459,7 @@ function closeModal() {
   if (returnToSettings) {
     returnToSettings = false;
     openSettings();
-  } else if (modalTrigger?.isConnected) modalTrigger.focus();
+  } else if (modalTrigger?.isConnected) modalTrigger.focus({ preventScroll: true });
 }
 
 function toast(message) {
@@ -614,7 +624,7 @@ window.addEventListener('storage', event => {
 
 let lastHour = currentRoundStart();
 setInterval(() => {
-  document.querySelectorAll('[data-countdown]').forEach(element => { element.textContent = countdown(Number(element.dataset.countdown)); });
+  tickCountdowns();
   if (currentRoundStart() !== lastHour) { lastHour = currentRoundStart(); render(); }
 }, 1000);
 
@@ -630,8 +640,10 @@ payments.subscribe(()=>{
   const field=focused?.id;
   const action=focused?.dataset?.action;
   const selection=field==='prediction-guess'?[focused.selectionStart,focused.selectionEnd]:null;
-  render();
+  const before=lastHtml;
+  render(true);
   if(ui.modal?.type?.startsWith('live-'))renderModal();
+  if(lastHtml===before)return;
   if(field){const next=document.getElementById(field);next?.focus({preventScroll:true});if(selection&&next?.type!=='number')next?.setSelectionRange(...selection);}
   else if(action&&!account.getState().dialogOpen)(ui.modal?modalRoot:ui.settingsOpen?settingsRoot:app).querySelector(`[data-action="${action}"]:not([disabled])`)?.focus({preventScroll:true});
 });

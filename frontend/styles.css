@@ -889,3 +889,38 @@ button.song-cover { width: 100%; border: 0; text-align: left; }
   .support-overview::-webkit-scrollbar { display: none; }
   .support-overview > .panel { flex: 0 0 84%; scroll-snap-align: start; }
 }
+
+/* ---- Navy navigation bar and per-page identity ---- */
+:root { --header-bg: #1f3561; --header-text: #ffffff; --header-muted: rgb(255 255 255 / 68%); --art-ink: #1f3561; --art-ground: #f4f1ea; }
+[data-theme="dark"] { --header-bg: #0f1626; --header-text: #eaf0fa; --header-muted: rgb(234 240 250 / 62%); --art-ink: #dfe6f3; --art-ground: #1b2333; }
+.site-header { background: var(--header-bg); border-bottom-color: transparent; color: var(--header-text); }
+.site-header .brand { color: var(--header-text); }
+.site-header .brand-mark { background: var(--header-text); color: var(--header-bg); }
+.site-header .main-nav a { color: var(--header-muted); gap: 7px; }
+.site-header .main-nav a svg { width: 16px; height: 16px; }
+.site-header .main-nav a:hover, .site-header .main-nav a.active { color: var(--header-text); }
+.site-header .main-nav a.active::after { background: var(--coral); }
+.site-header .demo-badge { color: var(--header-muted); }
+.site-header .button.primary { background: var(--header-text); border-color: var(--header-text); color: var(--header-bg); }
+.site-header .button.primary:hover { background: color-mix(in srgb, var(--header-text) 88%, var(--header-bg)); }
+.site-header .button.secondary { background: transparent; border-color: rgb(255 255 255 / 28%); color: var(--header-text); }
+.site-header .button.secondary:hover { background: rgb(255 255 255 / 10%); }
+
+/* Each page gets its own heading treatment so Discover, a song and My Purchases are easy to tell apart. */
+[data-page="discover"] .page-shell > .page-header,
+[data-page="purchases"] .page-shell > .page-header { padding: 28px 30px; border-radius: 14px; border: 1px solid var(--border); }
+[data-page="discover"] .page-shell > .page-header { background: var(--blue-soft); }
+[data-page="discover"] .page-header .eyebrow { color: var(--blue); }
+[data-page="purchases"] .page-shell > .page-header { background: var(--gold-soft); }
+[data-page="purchases"] .page-header .eyebrow { color: var(--gold); }
+[data-page="support"] .song-page-heading { padding: 18px 20px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--coral); }
+@media (max-width: 599px) {
+  [data-page="discover"] .page-shell > .page-header,
+  [data-page="purchases"] .page-shell > .page-header { padding: 20px 18px; }
+}
+
+/* Generated artwork for fictional artists (photos for real ones). */
+.cover-art, .avatar-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.song-cover:has(.cover-art)::after, .song-cover:has(.cover-art) .cover-lines, .song-cover:has(.cover-art) .cover-mark { display: none; }
+.song-cover:has(.cover-art) .cover-caption, .song-cover.has-photo .cover-caption { position: relative; z-index: 1; padding: 3px 7px; border-radius: 5px; background: rgb(255 255 255 / 86%); color: #1f3561; text-shadow: none; }
+[data-theme="dark"] .song-cover:has(.cover-art) .cover-caption { background: rgb(15 22 38 / 80%); color: #eaf0fa; }
