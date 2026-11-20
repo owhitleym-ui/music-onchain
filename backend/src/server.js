@@ -36,5 +36,7 @@ const server=createServer(handler);
 server.requestTimeout=20000;
 server.headersTimeout=15000;
 server.on('error',()=>{console.error('Cannot open the local backend on port 3001. Stop the other backend before restarting.');process.exitCode=1;worker?.stop();paymentWorker?.stop();});
-server.listen(3001,'127.0.0.1',()=>{console.log('Account backend: http://127.0.0.1:3001');worker?.start();paymentWorker?.start();});
+// Loopback on 3001 locally; a host like Render sets PORT and HOST=0.0.0.0.
+const PORT=Number(process.env.PORT||3001),HOST=process.env.HOST||'127.0.0.1';
+server.listen(PORT,HOST,()=>{console.log(`Account backend: http://${HOST}:${PORT}`);worker?.start();paymentWorker?.start();});
 for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{worker?.stop();paymentWorker?.stop();server.close(()=>process.exit(0));setTimeout(()=>process.exit(0),1500).unref();});

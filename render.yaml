@@ -1,0 +1,30 @@
+# Render Blueprint for the backend API (New > Blueprint > pick this repo).
+# Secrets are marked sync: false, so Render asks for them in the dashboard; never commit them.
+services:
+  - type: web
+    name: music-onchain-api
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22.20.0"
+      - key: HOST
+        value: 0.0.0.0
+      - key: MUSIC_PAYMENT_DEPLOYMENT
+        value: arc-testnet-atomic-live
+      - key: ARC_RPC_URL
+        value: https://rpc.testnet.arc.io
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: PRIVY_APP_SECRET
+        sync: false
+      - key: ADMIN_PRIVATE_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

@@ -1,11 +1,11 @@
 import {AppError,publicError} from './errors.js';
-import {ORIGIN} from './config.js';
+import {ORIGINS} from './config.js';
 export function createHandler({authenticate,approvalService,purchases,contests,configured=true,health=async()=>({ready:configured}),clock=Date.now}) {
  const rates=new Map();
  return async(req,res)=>{
   const send=(code,body)=>{res.writeHead(code,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...(code===429?{'Retry-After':'60'}:{})});res.end(JSON.stringify(body));};
   try {
-   if(req.headers.origin&&req.headers.origin!==ORIGIN)throw new AppError('BAD_REQUEST',403);
+   if(req.headers.origin&&!ORIGINS.includes(req.headers.origin))throw new AppError('BAD_REQUEST',403);
    const url=new URL(req.url,'http://127.0.0.1:3001');
    const accountEntries=Boolean(contests&&url.pathname==='/api/account/entries');
    if(url.search&&(!accountEntries||[...url.searchParams.keys()].some(k=>k!=='cursor')||url.searchParams.getAll('cursor').length>1||url.searchParams.get('cursor')?.length>2048))throw new AppError('BAD_REQUEST',400);

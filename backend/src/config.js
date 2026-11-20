@@ -5,7 +5,9 @@ export const APP_ID = 'cmwnr8etv005h0gjvwth61jyt';
 export const CHAIN_ID = 5042002;
 export const CONTRACT = '0x003043208750d205f98ac1d9ae670d2d2a19797c';
 export const ORIGINAL_OWNER = '0xcd61a22acf76623114583a1e0a031c18201baf51';
-export const ORIGIN = 'http://localhost:3000';
+// Browser origins allowed to call the API. Local dev by default; set ALLOWED_ORIGINS (comma-separated) when hosted.
+export const ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000').split(',').map(o => o.trim().replace(/\/$/, '')).filter(Boolean);
+export const ORIGIN = ORIGINS[0];
 export const address = value => typeof value === 'string' && /^0x[\da-f]{40}$/i.test(value) && !/^0x0{40}$/i.test(value) ? value.toLowerCase() : null;
 export const sameAddress = (a, b) => Boolean(address(a) && address(a) === address(b));
 export const deployment = JSON.parse(readFileSync(new URL('../../contracts/deployments/arc-testnet-curve90.json', import.meta.url), 'utf8'));
