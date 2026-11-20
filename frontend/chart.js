@@ -1,4 +1,5 @@
-const colors = { blue: '#3974e6', orange: '#c7865b', teal: '#6aa99c' };
+// Theme colors come from CSS variables: navy for history, coral for crowd predictions, gold for the linear curve.
+const colors = { blue: 'var(--blue)', coral: 'var(--coral)', orange: 'var(--gold)', teal: 'var(--coral)' };
 
 function smoothPath(points) {
   if (points.length < 2) return '';
@@ -64,7 +65,7 @@ export function renderChart({ history, roundStart, summaries, selectedHorizon, h
     <line x1="${x(roundStart)}" x2="${x(roundStart)}" y1="${top}" y2="${bottom}" class="chart-now-line"/>
     <text x="${x(roundStart) + 12}" y="${top - 13}" class="chart-axis">Crowd predictions</text>
     <path d="${smoothPath(historyPoints)}" fill="none" stroke="${colors.blue}" stroke-width="3" stroke-linecap="round"/>
-    <polyline points="${averagePath}" fill="none" stroke="${colors.blue}" stroke-opacity=".7" stroke-width="2.2" stroke-dasharray="6 6"/>
+    <polyline points="${averagePath}" fill="none" stroke="${colors.coral}" stroke-opacity=".7" stroke-width="2.2" stroke-dasharray="6 6"/>
     <circle cx="${last.x}" cy="${last.y}" r="4" fill="${colors.blue}"/>
     ${futurePoints.map(point => {
       const selected = point.horizon.id === selectedHorizon;
@@ -74,8 +75,8 @@ export function renderChart({ history, roundStart, summaries, selectedHorizon, h
       return `<g role="button" tabindex="0" data-action="select-horizon" data-horizon="${point.horizon.id}" aria-label="${point.horizon.label}, average guess ${numeric(average)} views" class="chart-point ${selected ? 'selected' : ''}">
         <title>${point.horizon.label} · Average ${numeric(average)} views · ${summaries[point.horizon.id].spotCount} spots</title>
         <circle cx="${point.x}" cy="${point.y}" r="17" fill="transparent"/>
-        ${selected ? `<circle cx="${point.x}" cy="${point.y}" r="13" fill="${colors.blue}" fill-opacity=".12"/>` : ''}
-        <circle cx="${point.x}" cy="${point.y}" r="${selected ? 6 : 4.8}" fill="var(--surface)" stroke="${colors.blue}" stroke-width="2.5"/>
+        ${selected ? `<circle cx="${point.x}" cy="${point.y}" r="13" fill="${colors.coral}" fill-opacity=".14"/>` : ''}
+        <circle cx="${point.x}" cy="${point.y}" r="${selected ? 6 : 4.8}" fill="var(--surface)" stroke="${colors.coral}" stroke-width="2.5"/>
       </g>
       <text x="${point.x}" y="${point.y + labelOffset}" text-anchor="${point.horizon.id === 'week' ? 'end' : 'middle'}" class="chart-value">${scaled(average)>=100000000n?compact(scaled(average)/100n):numeric(average)}</text>
       <text x="${point.x}" y="${bottom + tickOffset}" text-anchor="${point.horizon.id === 'week' ? 'end' : 'middle'}" class="chart-axis ${selected ? 'selected' : ''}">${point.horizon.label}</text>`;

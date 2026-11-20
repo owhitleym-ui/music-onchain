@@ -4,6 +4,7 @@ import {liveCount,liveAverage,freshness} from './live-format.js';
 import { HOUR, HORIZONS, artists, songs, currentRoundStart, getHistory } from './data.js';
 import { createInitialState, loadState, saveState, toggleFollow, setTheme, PURCHASES_PAUSED, getRoundSummary, getPortfolio, getPurchaseStatus } from './store.js';
 import { icon } from './icons.js';
+import { artistAvatar, artistPhoto, loadArtistPhotos } from './artist-media.js';
 import { renderChart, renderRewardCurve } from './chart.js';
 import { account } from './account.js';
 import { formatDollars, formatAccountDollars } from './money.js';
@@ -14,6 +15,7 @@ const ui = {
   search: '', genre: 'all', followedOnly: false, filtersOpen: false,
   historyDays: 3, amount: SPOT_PRICE_CENTS, guess: '', formError: '',
   lastSong: 'animals', lastContext: '', modal: null, settingsOpen: false,
+  purchaseSort: 'newest', followSort: 'recent', lastView: '',
 };
 const app = document.querySelector('#app');
 const modalRoot = document.querySelector('#modal-root');
@@ -184,7 +186,8 @@ function closeSettings(restoreFocus = true) {
 
 function cover(song, small = false) {
   const artist = artistFor(song);
-  return `<div class="song-cover ${small ? 'small-cover' : ''}" style="--cover-color:${artist.color}" aria-hidden="true"><span class="cover-mark">${esc(artist.initials)}</span><span class="cover-lines"><i></i><i></i><i></i><i></i><i></i></span>${small ? '' : `<span class="cover-caption">${esc(song.title)}</span>`}</div>`;
+  const photo = artistPhoto(artist.id);
+  return `<div class="song-cover ${small ? 'small-cover' : ''} ${photo ? 'has-photo' : ''}" style="--cover-color:${artist.color}" aria-hidden="true">${photo ? `<img class="cover-photo" src="${photo}" alt="" loading="lazy" referrerpolicy="no-referrer" data-artist-photo="${artist.id}" />` : ''}<span class="cover-mark">${esc(artist.initials)}</span><span class="cover-lines"><i></i><i></i><i></i><i></i><i></i></span>${small ? '' : `<span class="cover-caption">${esc(song.title)}</span>`}</div>`;
 }
 
 function songCard(song, index) {
@@ -259,8 +262,13 @@ function renderSupport(context) {
   const selected = horizonFor(horizon);
   return `<main class="page-shell support-page">
     <a class="breadcrumb" href="#discover">${icon('back')} All songs</a>
-    <div class="song-page-heading"><div class="song-heading-meta"><div class="song-avatar" style="--cover-color:${artist.color}">${esc(artist.initials)}</div><div><p class="eyebrow">${liveRound?'Test contest · Simulated music statistics':'TikTok · BGM video views <span class="sample-inline">/ Sample data</span>'}</p><h1 class="page-title">${esc(song.title)}</h1><p class="song-artist">${esc(artist.name)} <span class="genre-tag">${esc(artist.genre)}</span></p></div></div><button class="button secondary small" data-action="rules">${icon('info')} How rewards work</button></div>
+    <div class="song-page-heading"><div class="song-heading-meta">${artistAvatar(artist, 'song-avatar')}<div><p class="eyebrow">${liveRound?'Test contest · Simulated music statistics':'TikTok · BGM video views <span class="sample-inline">/ Sample data</span>'}</p><h1 class="page-title">${esc(song.title)}</h1><p class="song-artist">${esc(artist.name)} <span class="genre-tag">${esc(artist.genre)}</span></p></div></div><button class="button secondary small" data-action="rules">${icon('info')} How rewards work</button></div>
     ${liveRound?`<div class="live-round-toolbar"><label class="field-label" for="live-round-select">Test round<select class="select-input" id="live-round-select">${paymentState.catalog.rounds.map(r=>`<option value="${esc(r.id)}" ${r.id===liveRound.id?'selected':''}>${dateTime(r.start)} CT · ${r.entryStatus??'test round'}</option>`).join('')}</select></label><p class="live-freshness" role="status">${esc(freshness(snapshot,paymentState.catalogError))}</p></div>`:''}
+    <div class="support-overview">
+      <section class="panel"><div class="artist-summary">${artistAvatar(artist, 'artist-avatar')}<div><span class="field-label">You’re supporting</span><h2 class="artist-heading">${esc(artist.name)}</h2></div></div>${followButton(artist, 'button secondary full-width')}<details class="artist-details"><summary>About the artist ${icon('down')}</summary><p class="artist-bio">${esc(artist.bio)}</p><p class="fine-print">The artist receives 2% of profit won in their contests.</p></details></section>
+      <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}">${countdown(roundStart + HOUR)}</strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${liveSong?(summary.totalDeposits==null?'—':nativeDollars(summary.totalDeposits)):money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
+      <section class="panel popular-panel"><h2 class="panel-title">Most popular guesses</h2><p class="fine-print">Most common value, counted by spots</p><table class="popular-table"><thead><tr><th scope="col">Window</th><th scope="col">Views</th><th scope="col">Spots</th></tr></thead><tbody>${HORIZONS.map(item => `<tr class="popular-row ${item.id === horizon ? 'selected' : ''}"><td><button class="text-button" data-action="select-horizon" data-horizon="${item.id}">${item.label}</button></td><td>${summaries[item.id].mode==null?'—':number(BigInt(summaries[item.id].mode))}</td><td>${liveCount(summaries[item.id].modeSpots)}</td></tr>`).join('')}</tbody></table><p class="fine-print">The chart shows the average. Tied popular guesses use the lower value.</p></section>
+    </div>
     <div class="support-layout"><div class="support-main">
       <section class="panel chart-panel"><div class="panel-heading"><div><h2 class="panel-title">Follow the momentum</h2><p class="muted chart-subtitle">${liveSong?'Simulated music views · actual crowd predictions':'Views in the 24 hours ending at each point'}</p></div><div class="segmented-control chart-controls" aria-label="Historical chart range">${[3, 7, 30].map(days => `<button data-action="history-days" data-days="${days}" class="${ui.historyDays === days ? 'active' : ''}" aria-pressed="${ui.historyDays === days}">${days}D</button>`).join('')}</div></div>
       <div class="chart-wrap">${renderChart({ history: getHistory(song.id, roundStart, ui.historyDays), roundStart, summaries, selectedHorizon: horizon, horizons: HORIZONS, live: liveSong })}</div>
@@ -273,11 +281,7 @@ function renderSupport(context) {
       <p id="guess-hint" class="fine-print">${ui.amount === BUNDLE_PRICE_CENTS ? 'Your one guess is entered ten times. A winning spot gets the 5% bonus only when its matched losing spot belongs to a different account. Spots paired within the same account use the standard reward.' : paymentOption(ui.amount).id==='four'?'Four separate $5 entries. Same guess. No bonus. All four are purchased together.':`One ${money(SPOT_PRICE_CENTS)} spot enters your guess in this round.`}</p>
       <p class="error-message" id="form-error" role="alert">${esc(ui.formError)}</p>
       <p class="purchase-paused" id="purchase-pause-notice">${esc(entryMessage)}</p><div class="purchase-footer">${open ? `<button class="button primary" type="submit" ${canPay?'':'disabled'} aria-describedby="purchase-pause-notice">${paymentState.busy?'Preparing purchase…':liveRound?'Review purchase':'Purchases paused'}</button>` : `<button class="button secondary" type="button" data-action="current-round">Open current round</button>`}</div></form></section>
-    </div><aside class="support-sidebar">
-      <section class="panel"><div class="artist-summary"><div class="artist-avatar" style="--cover-color:${artist.color}">${esc(artist.initials)}</div><div><span class="field-label">You’re supporting</span><h2 class="artist-heading">${esc(artist.name)}</h2></div></div>${followButton(artist, 'button secondary full-width')}<details class="artist-details"><summary>About the artist ${icon('down')}</summary><p class="artist-bio">${esc(artist.bio)}</p><p class="fine-print">The artist receives 2% of profit won in their contests.</p></details></section>
-      <section class="panel"><div class="round-meta"><span class="field-label">Hourly round</span><strong>${dateTime(roundStart)} CT</strong></div><div class="round-status">${icon('clock')}<span>${open?'Entries close in':Date.now()<roundStart?'Entries open '+dateTime(roundStart)+' CT':'Entries closed'}</span>${open ? `<strong class="countdown" data-countdown="${roundStart + HOUR}">${countdown(roundStart + HOUR)}</strong>` : ''}</div><p class="fine-print">${Date.now()<roundStart?'Closes':open?'Closes':'Closed'} ${dateTime(roundStart + HOUR)} CT</p><div class="stat-grid"><div class="side-stat"><strong>${number(summary.peopleCount)}</strong><span>people</span></div><div class="side-stat"><strong>${number(summary.spotCount)}</strong><span>${money(SPOT_PRICE_CENTS)} spots</span></div></div><div class="round-total"><span>Total entered · ${selected.label}</span><strong>${liveSong?(summary.totalDeposits==null?'—':nativeDollars(summary.totalDeposits)):money(summary.totalEnteredCents)}</strong></div><p class="fine-print">Each hourly round has its own three prediction windows.</p></section>
-      <section class="panel popular-panel"><h2 class="panel-title">Most popular guesses</h2><p class="fine-print">Most common value, counted by spots</p><table class="popular-table"><thead><tr><th scope="col">Window</th><th scope="col">Views</th><th scope="col">Spots</th></tr></thead><tbody>${HORIZONS.map(item => `<tr class="popular-row ${item.id === horizon ? 'selected' : ''}"><td><button class="text-button" data-action="select-horizon" data-horizon="${item.id}">${item.label}</button></td><td>${summaries[item.id].mode==null?'—':number(BigInt(summaries[item.id].mode))}</td><td>${liveCount(summaries[item.id].modeSpots)}</td></tr>`).join('')}</tbody></table><p class="fine-print">The chart shows the average. Tied popular guesses use the lower value.</p></section>
-    </aside></div></main>`;
+    </div></div></main>`;
 }
 
 function statusLabel(purchase) {
@@ -292,7 +296,7 @@ function purchaseRow(purchase) {
   const profit = result ? result.returnedCents - purchase.costCents : null;
   return `<tr class="purchase-row" data-action="purchase-detail" data-id="${purchase.id}" tabindex="0" role="button" aria-label="View ${esc(song.title)} purchase, ${statusLabelText(purchase)}">
     <td><div class="purchase-song">
-      <span class="purchase-song-avatar" style="--cover-color:${artist.color}">${esc(artist.initials)}</span>
+      ${artistAvatar(artist, 'purchase-song-avatar')}
       <div class="purchase-song-meta"><strong>${esc(song.title)}</strong><span class="subline">${esc(artist.name)}</span></div>
     </div></td>
     <td class="purchase-period-cell">${horizonFor(purchase.horizon).label}
@@ -312,19 +316,56 @@ function statusLabelText(purchase) {
   return { pending: 'pending', awaiting: 'awaiting official result', completed: 'completed sample result' }[getPurchaseStatus(purchase)];
 }
 
+const PURCHASE_SORTS = [
+  ['newest', 'Newest first'], ['oldest', 'Oldest first'], ['profit-high', 'Highest net profit'],
+  ['profit-low', 'Lowest net profit'], ['amount-high', 'Largest entry'], ['song', 'Song A–Z'],
+];
+const FOLLOW_SORTS = [['recent', 'Recently followed'], ['az', 'Artist A–Z'], ['za', 'Artist Z–A'], ['songs', 'Most songs']];
+
+function sortControl(id, options, value) {
+  return `<label class="sort-control">${icon('sort')}<span class="sr-only">Sort by</span><select class="select-input" id="${id}">${options.map(([key, label]) => `<option value="${key}" ${key === value ? 'selected' : ''}>${label}</option>`).join('')}</select></label>`;
+}
+
+function sortedPurchases(list) {
+  const profit = purchase => (purchase.result ? purchase.result.returnedCents - purchase.costCents : null);
+  const title = purchase => songs.find(item => item.id === purchase.songId)?.title ?? '';
+  const byProfit = direction => (a, b) => {
+    const x = profit(a), y = profit(b);
+    if (x === null || y === null) return (x === null) - (y === null); // awaiting results last
+    return direction * (y - x);
+  };
+  const compare = {
+    newest: (a, b) => b.purchasedAt - a.purchasedAt,
+    oldest: (a, b) => a.purchasedAt - b.purchasedAt,
+    'profit-high': byProfit(1),
+    'profit-low': byProfit(-1),
+    'amount-high': (a, b) => b.costCents - a.costCents || b.purchasedAt - a.purchasedAt,
+    song: (a, b) => title(a).localeCompare(title(b)) || b.purchasedAt - a.purchasedAt,
+  }[ui.purchaseSort] ?? ((a, b) => b.purchasedAt - a.purchasedAt);
+  return [...list].sort(compare);
+}
+
+function sortedFollowed(list) {
+  const songCount = artist => songs.filter(song => song.artistId === artist.id).length;
+  if (ui.followSort === 'az') return [...list].sort((a, b) => a.name.localeCompare(b.name));
+  if (ui.followSort === 'za') return [...list].sort((a, b) => b.name.localeCompare(a.name));
+  if (ui.followSort === 'songs') return [...list].sort((a, b) => songCount(b) - songCount(a) || a.name.localeCompare(b.name));
+  return [...list].sort((a, b) => state.follows.indexOf(b.id) - state.follows.indexOf(a.id));
+}
+
 function renderPurchases(context) {
   const portfolio = getPortfolio(state);
   const followed = artists.filter(artist => state.follows.includes(artist.id));
   const pending = state.purchases.filter(purchase => purchase.status === 'pending').length;
   let content;
   if (context.tab === 'subscribed') {
-    content = followed.length ? `<div class="followed-grid">${followed.map(artist => `<article class="followed-card"><div class="artist-summary"><span class="artist-avatar" style="--cover-color:${artist.color}">${esc(artist.initials)}</span><div><h2 class="artist-heading">${esc(artist.name)}</h2><span class="genre-tag">${esc(artist.genre)}</span></div></div><p class="artist-bio">${esc(artist.bio)}</p><div class="followed-songs">${songs.filter(song => song.artistId === artist.id).map(song => `<a href="${songLink(song.id)}">${esc(song.title)} ${icon('arrow')}</a>`).join('')}</div>${followButton(artist, 'button secondary small')}</article>`).join('')}</div>` : emptyState('Find your people', 'Follow an artist to keep their songs here.', '<a class="button primary" href="#discover">Discover artists</a>');
+    content = followed.length ? `<div class="followed-grid">${sortedFollowed(followed).map(artist => `<article class="followed-card"><div class="artist-summary">${artistAvatar(artist, 'artist-avatar')}<div><h2 class="artist-heading">${esc(artist.name)}</h2><span class="genre-tag">${esc(artist.genre)}</span></div></div><p class="artist-bio">${esc(artist.bio)}</p><div class="followed-songs">${songs.filter(song => song.artistId === artist.id).map(song => `<a href="${songLink(song.id)}">${esc(song.title)} ${icon('arrow')}</a>`).join('')}</div>${followButton(artist, 'button secondary small')}</article>`).join('')}</div>` : emptyState('Find your people', 'Follow an artist to keep their songs here.', '<a class="button primary" href="#discover">Discover artists</a>');
   } else {
-    content = state.purchases.length ? `<div class="table-container"><table class="purchase-table"><thead><tr><th scope="col">Song / artist</th><th scope="col">Window / purchased</th><th scope="col">Your guess</th><th scope="col">Entry</th><th scope="col">Rank</th><th scope="col">Status</th><th scope="col">Net profit</th><th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody>${state.purchases.map(purchaseRow).join('')}</tbody></table></div>` : emptyState('No sample purchases', 'Browse songs and charts while purchases are unavailable in this preview.', '<a class="button primary" href="#discover">Explore songs</a>');
+    content = state.purchases.length ? `<div class="table-container"><table class="purchase-table"><thead><tr><th scope="col">Song / artist</th><th scope="col">Window / purchased</th><th scope="col">Your guess</th><th scope="col">Entry</th><th scope="col">Rank</th><th scope="col">Status</th><th scope="col">Net profit</th><th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody>${sortedPurchases(state.purchases).map(purchaseRow).join('')}</tbody></table></div>` : emptyState('No sample purchases', 'Browse songs and charts while purchases are unavailable in this preview.', '<a class="button primary" href="#discover">Explore songs</a>');
   }
   return `<main class="page-shell"><div class="page-header"><div><p class="eyebrow">Your music intuition, on record.</p><h1 class="page-title">My Purchases</h1><p class="page-description">Keep track of the artists you support and how your predictions perform.</p></div><span class="sample-data-label">Account &amp; sample records</span></div>
     ${context.tab==='all'?accountPurchaseMarkup(account.getState(),payments.getState()):''}<h2 class="panel-title">Sample purchase history</h2><p class="sample-history-notice">These are sample records stored in this browser. They are not purchases made by your signed-in account and do not affect your account balance.</p><div class="portfolio-stats"><section class="portfolio-stat"><span class="field-label">Artists supported</span><strong class="portfolio-value">${portfolio.supportedArtists}<span>artists</span></strong><p class="fine-print">Across all your prediction purchases</p></section><section class="portfolio-stat"><span class="field-label">Net profit</span><strong class="portfolio-value ${profitClass(portfolio.netProfitCents)}">${signedMoney(portfolio.netProfitCents)}</strong><p class="fine-print">Money returned minus completed purchase costs</p></section></div>
-    <div class="purchase-toolbar"><div class="tabs" aria-label="Purchase views"><a href="#purchases?tab=subscribed" class="${context.tab === 'subscribed' ? 'active' : ''}">Subscribed <span>${followed.length}</span></a><a href="#purchases" class="${context.tab === 'all' ? 'active' : ''}">All Purchases <span>${state.purchases.length}</span></a></div>${context.tab === 'all' ? `<span class="section-note">${pending} pending · ${state.purchases.length - pending} completed</span>` : '<span class="section-note">Following is free</span>'}</div>${content}
+    <div class="purchase-toolbar"><div class="tabs" aria-label="Purchase views"><a href="#purchases?tab=subscribed" class="${context.tab === 'subscribed' ? 'active' : ''}">Subscribed <span>${followed.length}</span></a><a href="#purchases" class="${context.tab === 'all' ? 'active' : ''}">All Purchases <span>${state.purchases.length}</span></a></div><div class="toolbar-end">${context.tab === 'all' ? `<span class="section-note">${pending} pending · ${state.purchases.length - pending} completed</span>${state.purchases.length > 1 ? sortControl('purchase-sort', PURCHASE_SORTS, ui.purchaseSort) : ''}` : `<span class="section-note">Following is free</span>${followed.length > 1 ? sortControl('follow-sort', FOLLOW_SORTS, ui.followSort) : ''}`}</div></div>${content}
     <p class="fine-print page-footnote">These historical samples illustrate contest results and fees. Account purchases appear separately above.</p></main>`;
 }
 
@@ -431,6 +472,8 @@ document.addEventListener('input', event => {
 
 document.addEventListener('change', event => {
   if(event.target.id==='live-round-select'){location.hash=`#support?song=last-bus-home&roundId=${encodeURIComponent(event.target.value)}&horizon=${route().horizon}`;return;}
+  if (event.target.id === 'purchase-sort') { ui.purchaseSort = event.target.value; keepScroll(render); document.getElementById('purchase-sort')?.focus({ preventScroll: true }); return; }
+  if (event.target.id === 'follow-sort') { ui.followSort = event.target.value; keepScroll(render); document.getElementById('follow-sort')?.focus({ preventScroll: true }); return; }
   if (event.target.id === 'genre-filter') { ui.genre = event.target.value; refreshDiscoverResults(); }
   if (event.target.id === 'followed-filter') { ui.followedOnly = event.target.checked; refreshDiscoverResults(); }
   const count = Number(ui.genre !== 'all') + Number(ui.followedOnly);
@@ -557,7 +600,14 @@ document.addEventListener('keydown', event => {
   if (target && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); target.dispatchEvent(new MouseEvent('click', { bubbles: true })); }
 });
 
-window.addEventListener('hashchange', () => { closeSettings(false); closeModal(); render(); window.scrollTo({ top: 0 }); });
+function viewKey(context = route()) { return context.page === 'support' ? `support:${context.song.id}` : context.page; }
+function keepScroll(fn) { const y = window.scrollY; fn(); window.scrollTo({ top: y }); }
+window.addEventListener('hashchange', () => {
+  closeSettings(false); closeModal();
+  const next = viewKey();
+  if (next === ui.lastView) { keepScroll(render); return; }
+  ui.lastView = next; render(); window.scrollTo({ top: 0 });
+});
 window.addEventListener('storage', event => {
   if (event.key === 'music-prediction-demo-v1') { state = loadState(); render(); if (ui.modal?.type === 'confirm') renderModal(); }
 });
@@ -568,7 +618,9 @@ setInterval(() => {
   if (currentRoundStart() !== lastHour) { lastHour = currentRoundStart(); render(); }
 }, 1000);
 
+ui.lastView = viewKey();
 render();
+loadArtistPhotos(() => keepScroll(render));
 account.subscribe(refreshAccountUI);
 document.addEventListener('visibilitychange',()=>{account.onVisibilityChange();if(!document.hidden)void payments.refresh();});
 

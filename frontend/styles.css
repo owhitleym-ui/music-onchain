@@ -3,18 +3,24 @@
   --background: #f7f9fc;
   --surface: #ffffff;
   --surface-subtle: #f5f7fa;
-  --text: #182334;
-  --muted: #68758a;
-  --border: #e3e8ef;
-  --blue: #245ee6;
-  --blue-hover: #194dc5;
-  --blue-soft: #edf3ff;
+  --text: #17213a;
+  --muted: #637089;
+  --border: #e2e6ee;
+  /* Palette: deep navy (primary), coral and gold accents used sparingly. */
+  --blue: #1f3561;
+  --blue-hover: #162849;
+  --blue-soft: #edf1f8;
+  --on-primary: #ffffff;
+  --coral: #d9644f;
+  --coral-soft: #fcede9;
+  --gold: #a87b1f;
+  --gold-soft: #f8f1df;
   --green: #168465;
   --green-soft: #eaf7f0;
   --red: #c34450;
   --red-soft: #fff0f1;
-  --orange: #9f691b;
-  --orange-soft: #fff5df;
+  --orange: #a87b1f;
+  --orange-soft: #f8f1df;
   --shadow: 0 12px 35px rgb(21 39 71 / 8%);
   --modal-shadow: 0 22px 90px rgb(13 27 49 / 22%);
 }
@@ -27,15 +33,20 @@
   --text: #eaf0fa;
   --muted: #a0adc2;
   --border: #303b4d;
-  --blue: #82aaff;
-  --blue-hover: #a5c1ff;
-  --blue-soft: #213451;
+  --blue: #a9bde8;
+  --blue-hover: #c3d1f0;
+  --blue-soft: #1f2b45;
+  --on-primary: #0f1626;
+  --coral: #f09a87;
+  --coral-soft: #3d2621;
+  --gold: #e1bd6d;
+  --gold-soft: #3a301b;
   --green: #67d3ae;
   --green-soft: #203b34;
   --red: #ff939f;
   --red-soft: #442a35;
-  --orange: #e3ba73;
-  --orange-soft: #413624;
+  --orange: #e1bd6d;
+  --orange-soft: #3a301b;
   --shadow: 0 12px 35px rgb(0 0 0 / 17%);
   --modal-shadow: 0 22px 90px rgb(0 0 0 / 40%);
 }
@@ -222,7 +233,7 @@ button, input { min-width: 0; }
   white-space: nowrap;
 }
 .button:hover { background: var(--surface-subtle); border-color: color-mix(in srgb, var(--muted) 40%, var(--border)); }
-.button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.button.primary { background: var(--blue); border-color: var(--blue); color: var(--on-primary); }
 .button.primary:hover { background: var(--blue-hover); border-color: var(--blue-hover); }
 [data-theme="dark"] .button.primary { color: #0e1d36; }
 .button.secondary { background: var(--surface); }
@@ -821,3 +832,60 @@ button.song-cover { width: 100%; border: 0; text-align: left; }
 .entry-record dd, .live-purchases .fine-print { overflow-wrap:anywhere; }
 .live-round-empty .button { margin:.5rem .5rem 0 0; }
 @media(max-width:560px){ .support-page .song-page-heading { flex-wrap:wrap; } .support-page .song-page-heading>.button { margin-left:auto; } }
+
+
+/* ---- Layout and palette refresh (presentation only) ---- */
+
+/* Covers and avatars: flat tints instead of gradients; real artists show a photo. */
+.song-cover { background: color-mix(in srgb, var(--cover-color, #5475a7) 26%, var(--surface)); }
+.song-cover.has-photo { color: #fff; }
+.song-cover.has-photo::after, .song-cover.has-photo .cover-lines, .song-cover.has-photo .cover-mark { display: none; }
+.cover-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.song-cover.has-photo .cover-caption { position: relative; z-index: 1; color: #fff; text-shadow: 0 1px 3px rgb(0 0 0 / 45%); }
+.song-avatar, .artist-avatar, .purchase-song-avatar { position: relative; overflow: hidden; }
+.song-avatar img, .artist-avatar img, .purchase-song-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.has-photo .avatar-initials { visibility: hidden; }
+
+/* Accents: coral for following, gold for bonuses and waiting states. */
+.card-follow:hover, .card-follow[aria-pressed="true"] { color: var(--coral); }
+.button.is-followed, .button.is-followed svg { color: var(--coral); }
+.bonus-label { color: var(--gold); }
+.badge.orange { background: var(--gold-soft); color: var(--gold); }
+.rank-label { color: var(--blue); }
+
+/* Support Artist: the three summary cards sit side by side above the chart and the entry form. */
+.support-overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 4px 0 20px; align-items: stretch; }
+.support-overview > .panel { margin-bottom: 0; }
+.support-overview .popular-table { margin-bottom: 6px; }
+.support-layout { grid-template-columns: minmax(0, 1fr); }
+.support-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; align-items: start; }
+.support-main > .panel { margin-bottom: 0; }
+@media (min-width: 1100px) {
+  .support-main { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .support-main .prediction-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+@media (max-width: 1000px) {
+  .support-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .support-overview > .popular-panel { grid-column: 1 / -1; }
+}
+@media (max-width: 599px) {
+  .support-overview { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .support-main { gap: 16px; }
+}
+
+/* Sorting controls for My Purchases and Subscribed. */
+.toolbar-end { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.sort-control { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.sort-control svg { width: 16px; height: 16px; }
+.sort-control .select-input { min-height: 34px; padding: 6px 10px; font-size: 13px; }
+@media (max-width: 599px) {
+  .purchase-toolbar { flex-wrap: wrap; }
+  .toolbar-end { width: 100%; justify-content: space-between; }
+}
+.legend-line.dashed { border-top-color: var(--coral); opacity: 1; }
+/* Phones: the three summary cards become a swipeable row so the prediction form stays near the top. */
+@media (max-width: 599px) {
+  .support-overview { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 18px; gap: 12px; align-items: flex-start; margin: 0 -18px 16px; padding: 2px 18px 6px; scrollbar-width: none; }
+  .support-overview::-webkit-scrollbar { display: none; }
+  .support-overview > .panel { flex: 0 0 84%; scroll-snap-align: start; }
+}
