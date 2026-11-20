@@ -1,4 +1,4 @@
-# AmpRamp
+# ampramp
 
 Full project snapshot, including Step 5 live contest data integration. Arc Testnet prototype using test funds. Real two-account purchases and payout acceptance remain pending.
 

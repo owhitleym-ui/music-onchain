@@ -1,6 +1,6 @@
 {
-  "name": "AmpRamp",
-  "short_name": "AmpRamp",
+  "name": "ampramp",
+  "short_name": "ampramp",
   "description": "Predict how big a song gets. Support the artist.",
   "start_url": "/",
   "display": "standalone",

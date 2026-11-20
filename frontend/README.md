@@ -1,4 +1,4 @@
-# AmpRamp — consumer frontend
+# ampramp — consumer frontend
 
 Current milestone: Last Bus Home reads verified contest totals and account entries through the local backend and QuickNode/Supabase event history. The atomic contract is active. Music-view history remains clearly simulated; other songs remain previews. Real two-account $5 / $20 / $50 purchase acceptance is still pending. The $20 option creates four ordinary entries together. See [deployment and payment instructions](../ATOMIC-PAYMENTS.md).
 

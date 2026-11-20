@@ -1,4 +1,4 @@
-# AmpRamp contest contracts — 90% curve
+# ampramp contest contracts — 90% curve
 
 Current payment milestone: $5 / $20 / $50 support is implemented. The $20 option creates four separate ordinary entries atomically. Live payments require the new Remix deployment and activation; the existing account connection is retained until then. See [deployment and payment instructions](../ATOMIC-PAYMENTS.md).
 

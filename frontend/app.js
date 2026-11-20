@@ -80,7 +80,7 @@ function followButton(artist, className = 'button secondary small', showText = t
 
 function renderHeader(page) {
   return `<header class="site-header"><div class="header-inner">
-    <a class="brand" href="#discover" aria-label="AmpRamp home"><img class="brand-logo brand-logo-light" src="/brand/ampramp-logo.svg" alt="AmpRamp" width="184" height="32" /><img class="brand-logo brand-logo-dark" src="/brand/ampramp-logo-dark.svg" alt="AmpRamp" width="184" height="32" /><img class="brand-mark-img brand-logo-light" src="/brand/ampramp-mark.svg" alt="AmpRamp" width="28" height="28" /><img class="brand-mark-img brand-logo-dark" src="/brand/ampramp-mark-dark.svg" alt="AmpRamp" width="28" height="28" /></a>
+    <a class="brand" href="#discover" aria-label="ampramp home"><img class="brand-mark-img brand-logo-light" src="/brand/ampramp-mark.svg" alt="" width="28" height="28" /><img class="brand-mark-img brand-logo-dark" src="/brand/ampramp-mark-dark.svg" alt="" width="28" height="28" /><span class="brand-name">ampramp</span></a>
     <nav class="main-nav" aria-label="Main navigation">
       <a href="#discover" class="${page !== 'purchases' ? 'active' : ''}" ${page === 'discover' ? 'aria-current="page"' : ''}>${icon('compass')}Discover</a>
       <a href="#purchases?tab=subscribed" class="${page === 'purchases' ? 'active' : ''}" ${page === 'purchases' ? 'aria-current="page"' : ''}>${icon('receipt')}My Purchases</a>
@@ -495,7 +495,7 @@ function render(background = false) {
   const chosenRound=context.page==='support'&&context.song.id==='last-bus-home'?context.liveRoundId:payments.currentRound()?.id??null;
   payments.selectRound(chosenRound);
   app.inert = ui.settingsOpen || Boolean(ui.modal);
-  document.title = `${context.page === 'support' ? context.song.title : context.page === 'purchases' ? 'My Purchases' : 'Discover'} · AmpRamp`;
+  document.title = `${context.page === 'support' ? context.song.title : context.page === 'purchases' ? 'My Purchases' : 'Discover'} · ampramp`;
 }
 
 function detailRows(rows) {
